@@ -1,0 +1,79 @@
+.tcg-stage {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+  isolation: isolate;
+  padding: 28px 20px;
+}
+
+.tcg-card {
+  position: relative;
+  width: min(76vw, 400px);
+  aspect-ratio: 3 / 4;
+  transform-style: preserve-3d;
+  will-change: transform;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+}
+
+.tcg-card:active {
+  cursor: grabbing;
+}
+
+.tcg-card:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 12px;
+  border-radius: 18px;
+}
+
+.tcg-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 4.5% / 3.4%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.tcg-front {
+  transform: translateZ(0.2px);
+  overflow: visible;
+  background: transparent;
+  box-shadow: 0 30px 65px rgba(0, 0, 0, 0.72);
+}
+
+/* 160% 超宽透明画布：让正值 Depth 下的角色与 UI 可以直接突破卡框悬浮在半空中 */
+.tcg-front canvas {
+  position: absolute;
+  width: 160%;
+  height: 160%;
+  max-width: none;
+  left: -30%;
+  top: -30%;
+  display: block;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.tcg-back {
+  visibility: hidden;
+  transform: rotateY(180deg) translateZ(0.2px);
+  background: #13216a;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px #202329,
+    0 30px 65px rgba(0, 0, 0, 0.75);
+}
+
+.tcg-back img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
