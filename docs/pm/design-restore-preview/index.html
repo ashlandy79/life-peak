@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIFE PACK 设计还原预览 · 首页与开包页</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#141311; color:#f4efe5; font-family:"PingFang SC","Microsoft YaHei",sans-serif; padding:36px 20px 60px; }
+  h1 { text-align:center; font-size:22px; letter-spacing:2px; font-weight:700; }
+  .sub { text-align:center; color:#a49c8d; font-size:13px; margin:8px 0 34px; }
+  .row { display:flex; gap:34px; justify-content:center; flex-wrap:wrap; align-items:flex-start; }
+  .col { width:375px; }
+  .cap { margin:14px 4px 0; font-size:13px; line-height:1.75; color:#cfc7b8; }
+  .cap b { color:#fff; font-size:14px; }
+  .cap span { color:#8f887b; }
+  .phone > * { flex:none; }
+  .phone { width:375px; height:auto; min-height:812px; border-radius:46px; overflow:hidden; position:relative; box-shadow:0 24px 70px rgba(0,0,0,.65), 0 0 0 10px #26241f, 0 0 0 12px #3a372f; display:flex; flex-direction:column; }
+  .hw { font-family:"Ma Shan Zheng","Zhi Mang Xing","Xingkai SC","STXingkai","Kaiti SC",cursive; }
+  /* ---------- shared phone bits ---------- */
+  .statusbar { height:44px; display:flex; justify-content:space-between; align-items:flex-end; padding:0 26px 4px; font-size:14px; font-weight:600; position:relative; z-index:5; }
+  .statusbar .ic { font-size:11px; letter-spacing:2px; }
+  .brandrow { display:flex; justify-content:space-between; align-items:flex-start; padding:6px 20px 0; position:relative; z-index:5; }
+  .logo { border:2px solid #191817; border-radius:50%; padding:5px 12px 6px; font-style:italic; font-weight:800; font-size:14px; transform:rotate(-4deg); background:rgba(255,255,255,.25); }
+  .logo small { font-style:normal; }
+  .date { font-size:13.5px; margin-top:7px; letter-spacing:1px; }
+  .bell { font-size:19px; position:relative; }
+  .bell::after { content:""; position:absolute; top:0; right:-2px; width:7px; height:7px; border-radius:50%; background:#e5484d; }
+  .tabbar { margin-top:auto; background:rgba(255,255,255,.92); border-radius:26px 26px 0 0; display:flex; justify-content:space-around; padding:10px 6px 20px; position:relative; z-index:6; box-shadow:0 -6px 24px rgba(60,50,30,.08); }
+  .tab { text-align:center; font-size:11px; color:#3c382f; width:56px; }
+  .tab .ti { font-size:20px; line-height:1.15; }
+  .tab.on { font-weight:700; }
+  .tab.on .bar { width:18px; height:3px; border-radius:2px; background:#191817; margin:3px auto 0; }
+  .panel { background:rgba(255,255,255,.94); border-radius:22px; margin:0 14px 12px; padding:14px 16px 12px; box-shadow:0 8px 22px rgba(80,66,40,.10); position:relative; }
+  .p-head { display:flex; align-items:center; gap:7px; }
+  .p-title { font-size:16.5px; font-weight:800; letter-spacing:1px; }
+  .p-count { font-size:11px; border:1.5px solid #c9c2b4; border-radius:999px; padding:1px 7px; color:#6d675c; background:#fff; }
+  .p-note { margin-left:auto; text-align:right; font-size:12.5px; line-height:1.45; color:#4c473e; }
+  .clip { position:absolute; top:-11px; right:16px; font-size:19px; transform:rotate(14deg); }
+  /* tasks */
+  .task { display:flex; align-items:center; gap:10px; padding:8.5px 0; border-bottom:1px dashed #e7e0d2; }
+  .task:last-child { border-bottom:none; }
+  .cb { width:21px; height:21px; border-radius:6px; border:2px solid #191817; flex:none; display:flex; align-items:center; justify-content:center; font-size:13px; color:#fff; }
+  .cb.done { background:#191817; }
+  .t-main { flex:1; min-width:0; }
+  .t-name { font-size:15px; font-weight:600; }
+  .t-sub { font-size:11.5px; color:#96907f; margin-top:1px; }
+  .t-reward { font-size:11.5px; color:#8a8474; white-space:nowrap; }
+  .t-check { color:#b18cff; font-size:15px; font-weight:800; }
+  .t-ring { width:15px; height:15px; border:2px solid #d8d2c4; border-radius:50%; flex:none; }
+  .chip { width:37px; height:37px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  /* puzzle */
+  .pieces { display:flex; gap:8px; margin-top:11px; align-items:center; }
+  .piece { width:52px; height:46px; border-radius:10px; position:relative; flex:none; }
+  .piece::after { content:""; position:absolute; right:-6px; top:15px; width:13px; height:13px; border-radius:50%; background:inherit; }
+  .piece.holo { background:linear-gradient(135deg,#cfe8ff,#f6d9f2 38%,#fff3bf 62%,#c9f2e2); box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.75), 0 3px 8px rgba(120,100,160,.25); }
+  .piece.empty { background:#f1ede3; box-shadow:inset 0 0 0 1.5px #ddd6c6; }
+  .piece.empty::after { background:#f1ede3; box-shadow:inset 0 0 0 1.5px #ddd6c6; }
+  .chev { margin-left:auto; color:#8a8474; font-size:17px; }
+  .sparkle { color:#191817; }
+  /* ---------- screen A ---------- */
+  .scr-a { background:#f4f0eb; color:#191817; }
+  .scr-a::before { content:""; position:absolute; inset:0; background:
+    radial-gradient(420px 300px at 85% 30%, rgba(216,198,255,.35), transparent 65%),
+    radial-gradient(380px 300px at 8% 58%, rgba(159,209,255,.28), transparent 65%),
+    radial-gradient(300px 200px at 55% 6%, rgba(255,243,191,.5), transparent 70%); }
+  .hero-a { position:relative; height:404px; }
+  .note-a { position:absolute; left:14px; top:132px; width:86px; background:rgba(255,255,255,.75); border-radius:6px; padding:8px 7px; transform:rotate(-5deg); font-size:11.5px; line-height:1.55; box-shadow:0 4px 10px rgba(90,75,50,.12); z-index:4; }
+  .quote-a { position:absolute; right:16px; top:26px; width:172px; transform:rotate(-5deg); font-size:19px; line-height:1.5; z-index:4; }
+  .pack-a { position:absolute; left:50%; top:66px; transform:translateX(-50%) rotate(-1deg); width:184px; filter:drop-shadow(0 22px 22px rgba(96,74,140,.35)); z-index:3; }
+  .side-a { position:absolute; right:14px; top:272px; transform:rotate(5deg); font-size:13.5px; line-height:1.35; z-index:4; }
+  .cta { margin:2px auto 16px; background:#191817; color:#f7f3ea; border-radius:999px; padding:13px 44px; font-size:16.5px; letter-spacing:3px; display:flex; gap:10px; align-items:center; box-shadow:0 10px 22px rgba(20,18,15,.3); position:relative; z-index:5; }
+  .cta-wrap { display:flex; justify-content:center; align-items:center; gap:12px; position:relative; z-index:5; }
+  /* ---------- screen B ---------- */
+  .scr-b { background:linear-gradient(163deg,#efe3cb 0%,#e7d5b6 42%,#dcc7a2 78%,#d3bd97 100%); color:#241f16; }
+  .scr-b::before { content:""; position:absolute; inset:0; background:
+    linear-gradient(115deg, transparent 55%, rgba(120,90,40,.16) 72%, transparent 88%),
+    radial-gradient(340px 240px at 88% 4%, rgba(255,250,230,.75), transparent 70%); }
+  .hero-b { position:relative; height:238px; }
+  .quote-b { position:absolute; left:20px; top:56px; width:178px; transform:rotate(-4deg); font-size:20.5px; line-height:1.55; z-index:4; }
+  .pack-b { position:absolute; right:20px; top:8px; width:158px; transform:rotate(1.5deg); filter:drop-shadow(0 16px 18px rgba(96,74,40,.35)); z-index:3; }
+  .banner-b { margin:0 14px 12px; border-radius:16px; padding:12px 16px; background:linear-gradient(100deg,#fdf6e9,#f3e3c8 55%,#e9f0f7); display:flex; justify-content:space-between; align-items:center; box-shadow:0 6px 16px rgba(90,70,35,.12); position:relative; }
+  .banner-b .hw { font-size:15.5px; line-height:1.6; }
+  /* ---------- screen C ---------- */
+  .scr-c { background:#030304; color:#f5f2ea; }
+  .scr-c::before { content:""; position:absolute; inset:0; background:
+    conic-gradient(from 210deg at 78% -6%, transparent 0deg, rgba(190,200,255,.20) 14deg, transparent 30deg),
+    conic-gradient(from 330deg at 6% 108%, transparent 0deg, rgba(255,205,235,.14) 16deg, transparent 34deg),
+    radial-gradient(520px 300px at 50% 88%, rgba(150,130,255,.20), transparent 65%),
+    radial-gradient(300px 200px at 82% 22%, rgba(255,190,120,.12), transparent 70%); }
+  .date-c { padding:2px 22px 0; font-size:15.5px; letter-spacing:2.5px; position:relative; z-index:5; }
+  .stage-c { position:relative; flex:1; }
+  .orbit { position:absolute; left:50%; top:44%; width:430px; height:150px; border:1.6px solid rgba(255,255,255,.5); border-radius:50%; transform:translate(-50%,-50%) rotate(-13deg); }
+  .pack-c { position:absolute; left:50%; top:42%; width:252px; transform:translate(-50%,-50%) rotate(-6deg); filter:drop-shadow(0 0 34px rgba(190,170,255,.5)) drop-shadow(0 30px 30px rgba(0,0,0,.8)); z-index:3; }
+  .refl { position:absolute; left:50%; top:69%; width:228px; transform:translateX(-50%) rotate(-6deg) scaleY(-1); opacity:.20; -webkit-mask-image:linear-gradient(to top, rgba(0,0,0,.9), transparent 78%); mask-image:linear-gradient(to top, rgba(0,0,0,.9), transparent 78%); }
+  .line-c { position:absolute; left:34px; bottom:104px; font-size:19.5px; line-height:1.65; z-index:5; }
+  .line-c u { text-decoration:none; border-bottom:1.6px solid rgba(255,255,255,.65); padding-bottom:2px; }
+  .mascot-c { position:absolute; right:22px; bottom:86px; text-align:center; font-size:11px; z-index:5; }
+  .indicator { position:absolute; bottom:7px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:rgba(255,255,255,.85); z-index:6; }
+  .indicator.dark { background:rgba(20,19,17,.8); }
+</style>
+</head>
+<body>
+<h1>LIFE PACK · 设计还原预览</h1>
+<p class="sub">目标稿：首页（浅色手账版 / 暖阳照片版）与开包页（暗夜宇宙版）· 卡包图复用仓库素材 pack_sealed.png · 375pt 宽</p>
+
+<div class="row">
+
+  <!-- ================= SCREEN A ================= -->
+  <div class="col">
+    <div class="phone scr-a">
+      <div class="statusbar"><span>9:41</span><span class="ic">▂▄▆ 📶 🔋</span></div>
+      <div class="brandrow">
+        <div><div class="logo">LIFE PACK ✦</div><div class="date">9月20日&nbsp;&nbsp;星期日</div></div>
+        <div class="bell">🔔</div>
+      </div>
+      <div class="hero-a">
+        <div class="note-a"><div style="font-size:17px">🐱</div>每一次抽卡<br>都是一次<br>新的生活 ✦</div>
+        <div class="quote-a hw">「今天也没啥事，<br>要不要抽一张？」🐱</div>
+        <img class="pack-a" src="pack_sealed.png" alt="卡包">
+        <div class="side-a hw">🪐<br>Random<br>Life<br>Event<br>—— ✦</div>
+      </div>
+      <div class="cta-wrap"><span class="sparkle">✦</span><div class="cta hw">拆开看看 <span>→</span></div><span class="sparkle">✦</span></div>
+      <div class="panel">
+        <div class="clip">📎</div>
+        <div class="p-head"><span style="font-size:17px">☀️</span><span class="p-title">今日小事</span><span class="p-count">2/4</span>
+          <div class="p-note hw">小小的完成<br>就是大大的生活 🙂</div></div>
+        <div class="task"><div class="cb done">✓</div><div class="t-main"><div class="t-name">好好刷牙</div></div><span class="t-reward">🧩 +1 拼图碎片</span></div>
+        <div class="task"><div class="cb done">✓</div><div class="t-main"><div class="t-name">喝一杯水</div></div><span class="t-reward">🧩 +1 拼图碎片</span></div>
+        <div class="task"><div class="cb"></div><div class="t-main"><div class="t-name">看1页书</div><div class="t-sub">今天只看一页就够了</div></div></div>
+        <div class="task"><div class="cb"></div><div class="t-main"><div class="t-name">出门晒5分钟</div><div class="t-sub">不想出门也没关系</div></div><span style="font-size:19px">🐱</span></div>
+      </div>
+      <div class="panel">
+        <div class="p-head"><span style="font-size:16px">🧩</span><span class="p-title">今日拼图</span><span class="p-count">3/5</span>
+          <div class="p-note hw">拼齐五片，<br>解锁隐藏卡片！ 🐹</div></div>
+        <div class="pieces"><div class="piece holo"></div><div class="piece holo"></div><div class="piece holo"></div><div class="piece empty"></div><div class="piece empty"></div><span class="chev">›</span></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on"><div class="ti">🏠</div>首页<div class="bar"></div></div>
+        <div class="tab"><div class="ti">📋</div>任务</div>
+        <div class="tab"><div class="ti">🗂️</div>卡册</div>
+        <div class="tab"><div class="ti">🐱</div>我的</div>
+      </div>
+      <div class="indicator dark"></div>
+    </div>
+    <p class="cap"><b>首页 A · 浅色手账版（对应设计图 1）</b><br>
+    背景 纸色 <span>#F4F0EB</span> + 虹彩光晕；卡包居中悬浮（宽 ≈196pt），左侧便签、右上斜排手写引语、右侧 Random Life Event 竖排涂鸦。<br>
+    黑色胶囊按钮「拆开看看 →」；今日小事面板含回形针与右上手写注脚；拼图 3/5（虹彩实片 + 浅色空位）。</p>
+  </div>
+
+  <!-- ================= SCREEN B ================= -->
+  <div class="col">
+    <div class="phone scr-b">
+      <div class="statusbar"><span>9:41</span><span class="ic">▂▄▆ 📶 🔋</span></div>
+      <div class="brandrow">
+        <div><div class="logo">LIFE PACK ✦</div><div class="date">9月20日&nbsp;&nbsp;星期日</div></div>
+        <div class="bell">🔔</div>
+      </div>
+      <div class="hero-b">
+        <div class="quote-b hw">「今天也没啥事，<br>要不要抽一张？」<br><span style="font-size:24px">🐱</span> ✦</div>
+        <img class="pack-b" src="pack_sealed.png" alt="卡包">
+      </div>
+      <div class="panel" style="margin-top:2px">
+        <div class="clip">📎</div>
+        <div class="p-head"><span style="font-size:17px">☀️</span><span class="p-title">今日小事</span><span class="p-count" style="background:#e6dcff;border-color:#cdbcf5">2/4</span>
+          <div class="p-note hw">小小的完成<br>就是大大的生活 🙂</div></div>
+        <div class="task"><div class="cb done">✓</div><div class="chip" style="background:#e8f0fb">🪥</div><div class="t-main"><div class="t-name">好好刷牙</div><div class="t-sub">清新的开始，给今天加点分。</div></div><span class="t-reward">🧩 +1 拼图碎片</span><span class="t-check">✓</span></div>
+        <div class="task"><div class="cb done">✓</div><div class="chip" style="background:#efe9fb">🥛</div><div class="t-main"><div class="t-name">喝一杯水</div><div class="t-sub">身体的第一杯水很重要。</div></div><span class="t-reward">🧩 +1 拼图碎片</span><span class="t-check">✓</span></div>
+        <div class="task"><div class="cb"></div><div class="chip" style="background:#fdf3e0">📖</div><div class="t-main"><div class="t-name">看 1 页书</div><div class="t-sub">今天只看一页就够了</div></div><span class="sparkle">✦</span><div class="t-ring"></div></div>
+        <div class="task"><div class="cb"></div><div class="chip" style="background:#eef6e6">🌤️</div><div class="t-main"><div class="t-name">出门晒 5 分钟</div><div class="t-sub">不想出门也没关系</div></div><span style="font-size:19px">🐱</span><div class="t-ring"></div></div>
+      </div>
+      <div class="panel">
+        <div class="p-head"><span style="font-size:16px">🧩</span><span class="p-title">今日拼图</span><span class="p-count">3/5</span>
+          <div class="p-note hw">拼齐五片，<br>解锁隐藏卡片！ 🐹</div></div>
+        <div class="pieces"><div class="piece holo"></div><div class="piece holo"></div><div class="piece holo"></div><div class="piece empty"></div><div class="piece empty"></div><span class="chev">›</span></div>
+      </div>
+      <div class="banner-b"><div class="hw">收集生活的碎片<br>拼成更特别的自己 ✦</div><div style="font-size:26px">🐱</div></div>
+      <div class="tabbar">
+        <div class="tab on"><div class="ti">🏠</div>首页<div class="bar"></div></div>
+        <div class="tab"><div class="ti">📋</div>任务</div>
+        <div class="tab"><div class="ti">🗂️</div>卡册</div>
+        <div class="tab"><div class="ti">🐱</div>我的</div>
+      </div>
+      <div class="indicator dark"></div>
+    </div>
+    <p class="cap"><b>首页 B · 暖阳照片版（对应设计图 2）</b><br>
+    背景为暖米色墙面 + 阳光斜影（实拍感）；卡包缩小靠右上，引语移到左侧。<br>
+    任务行升级：圆形 pastel 图标 + 副标题 + 右侧奖励与紫色 ✓ / 空心圆状态；底部多一条水彩横幅「收集生活的碎片，拼成更特别的自己」。</p>
+  </div>
+
+  <!-- ================= SCREEN C ================= -->
+  <div class="col">
+    <div class="phone scr-c">
+      <div class="statusbar"><span>9:41</span><span class="ic">▂▄▆ 📶 🔋</span></div>
+      <div class="date-c">9月20日&nbsp;&nbsp;&nbsp;星期日</div>
+      <div class="stage-c">
+        <div class="orbit"></div>
+        <img class="pack-c" src="pack_sealed.png" alt="卡包">
+        <img class="refl" src="pack_sealed.png" alt="">
+        <span style="position:absolute;left:36px;top:38%;font-size:15px">✦</span>
+        <span style="position:absolute;right:44px;top:24%;font-size:17px">✦</span>
+        <div class="line-c hw"><u>今天也没啥事。</u><br><u>那就抽一张吧。</u> ✦</div>
+        <div class="mascot-c"><div style="font-size:30px">🐱</div>LIFE PACK</div>
+      </div>
+      <div class="indicator"></div>
+    </div>
+    <p class="cap"><b>开包页 · 暗夜宇宙版（对应设计图 3）</b><br>
+    纯黑底 + 棱镜光束与地面镜面反射；卡包大尺寸斜置悬浮（≈252pt，-6°），细轨道环绕。<br>
+    左上仅日期（无品牌头）；左下手写两行「今天也没啥事。那就抽一张吧。」带下划线；右下吉祥物 + LIFE PACK 落款。此页为点开卡包前的全屏氛围页，点击后进入撕包交互。</p>
+  </div>
+
+</div>
+</body>
+</html>
