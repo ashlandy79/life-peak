@@ -131,31 +131,41 @@ export default function PackOpeningScreen() {
     setStage('SEALED');
   };
 
-  // Three.js 物理撕开完成：进入图2（卡片背面居中），紧接着平滑3D翻转至图3（卡片正面）
+  // Three.js 物理撕开完成：进入图2（卡片背面居中 + 法阵立即点亮），随后平滑3D翻转至图3（卡片正面）
   const handleThreeTearComplete = useCallback(() => {
-    // 阶段1：展示图2（卡背居中，正在撕裂卡包 100%）
+    // 阶段1：展示图2（卡背居中，法阵立即点亮旋转）
     setStage('CARD_BACK');
     triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
 
-    cardOpacity.value = withTiming(1, { duration: 320 });
+    cardOpacity.value = withTiming(1, { duration: 280 });
     cardScale.value = withSpring(1.0, { damping: 14, stiffness: 85 });
     cardTranslateY.value = withSpring(0, { damping: 15, stiffness: 80 });
 
-    // 阶段2：稍作停顿感知图2真实卡背，触发 180° -> 0° 3D 顺畅翻转并带扫光特效
+    // 阶段2：稍作停顿感知图2真实卡背与法阵，随后触发 180° -> 0° 3D 顺畅翻转
     setTimeout(() => {
       setIsFlipping(true);
       runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Medium);
 
-      tcgCardRef.current?.flipToFront(850, () => {
+      let isFinished = false;
+      const finishReveal = () => {
+        if (isFinished) return;
+        isFinished = true;
         setIsFlipping(false);
         setStage('REVEALED');
         runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Light);
 
-        // 阶段3：翻转完成，揭晓页底部操作按钮和能量环绽放
+        // 阶段3：翻转完成，揭晓页底部操作按钮与提示浮现
         controlsOpacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
         controlsTranslateY.value = withSpring(0, { damping: 14 });
-      });
-    }, 380);
+      };
+
+      // 触发 3D 翻转
+      if (tcgCardRef.current?.flipToFront) {
+        tcgCardRef.current.flipToFront(850, finishReveal);
+      }
+      // 双重安全定时器兜底：900ms 后必进揭晓态，彻底根除 100% 卡死问题
+      setTimeout(finishReveal, 900);
+    }, 350);
   }, [triggerHaptic]);
 
   const animatedCardContainerStyle = useAnimatedStyle(() => ({
@@ -275,12 +285,10 @@ export default function PackOpeningScreen() {
         {/* 阶段 B：真实卡背升起（图2）并在中央平滑 3D 翻转为卡片正面（图3） */}
         {stage !== 'SEALED' && (
           <Animated.View style={[styles.cosmicCardStage, animatedCardContainerStyle]}>
-            {/* 卡片正下方地面能量光环（翻至正面后绚丽点亮） */}
-            {stage === 'REVEALED' && (
-              <View style={styles.groundRingWrapper}>
-                <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
-              </View>
-            )}
+            {/* 卡片正下方地面能量法阵：卡片破袋升起（图2与图3）即全程旋转点亮 */}
+            <View style={styles.groundRingWrapper}>
+              <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
+            </View>
 
             {/* 3D 全息卡片本体（初始以背面 180° 居中，随后无缝翻转至正面 0°） */}
             <View style={styles.holoCardContainer}>

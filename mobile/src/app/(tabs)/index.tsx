@@ -7,6 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Image } from 'expo-image';
 import { BrandHeader } from '../../components/BrandHeader';
 import { HolographicPackCard } from '../../components/HolographicPackCard';
 import { DailyTasksPanel } from '../../components/DailyTasksPanel';
@@ -119,6 +120,17 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
+      {/* 1. 首页背景：图3 温暖波光日光折射原图 */}
+      <Image
+        source={require('../../../assets/home_bg.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
+
+      {/* 2. 柔和波光粼粼流转微光层 (Shimmer Caustics) */}
+      <div className="home-caustic-shimmer" />
+
+      {/* 3. 顶部手绘品牌与日期状态栏 */}
       <BrandHeader
         dateText="9月20日 星期日"
         onPressNotification={() => {
@@ -169,6 +181,45 @@ export default function HomeScreen() {
       {showFlyingStar && (
         <FlyingStarToAlbum onComplete={handleFlyingStarComplete} />
       )}
+
+      {/* 首页波光粼粼流光动画 */}
+      <style>{`
+        .home-caustic-shimmer {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(
+              ellipse at 75% 25%,
+              rgba(255, 255, 255, 0.42) 0%,
+              rgba(254, 240, 138, 0.15) 35%,
+              transparent 70%
+            ),
+            radial-gradient(
+              ellipse at 25% 65%,
+              rgba(255, 255, 255, 0.3) 0%,
+              rgba(103, 232, 249, 0.12) 40%,
+              transparent 75%
+            );
+          mix-blend-mode: soft-light;
+          animation: caustic-sway 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes caustic-sway {
+          0% {
+            opacity: 0.7;
+            transform: scale(1.0);
+          }
+          50% {
+            opacity: 0.95;
+            transform: scale(1.03) translate3d(1%, -1%, 0);
+          }
+          100% {
+            opacity: 0.75;
+            transform: scale(0.99) translate3d(-1%, 1%, 0);
+          }
+        }
+      `}</style>
     </View>
   );
 }
@@ -176,7 +227,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.paper,
+    backgroundColor: '#FAF7F2',
+    overflow: 'hidden',
+    position: 'relative',
   },
   scrollView: {
     flex: 1,

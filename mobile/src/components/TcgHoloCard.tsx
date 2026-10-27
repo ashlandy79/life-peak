@@ -123,7 +123,11 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
         handleRef.current?.flipCard();
       },
       flipToFront: (durationMs?: number, onComplete?: () => void) => {
-        handleRef.current?.flipToFront(durationMs, onComplete);
+        if (handleRef.current) {
+          handleRef.current.flipToFront(durationMs, onComplete);
+        } else {
+          setTimeout(() => onComplete?.(), durationMs || 850);
+        }
       },
       recenter: () => {
         handleRef.current?.recenter();
