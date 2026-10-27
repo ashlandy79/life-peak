@@ -197,6 +197,7 @@ export const ThreePackStage: React.FC<ThreePackStageProps> = ({
       sealedTextureUrl: '/packs/pack_sealed_norm.png',
       openedTextureUrl: '/packs/pack_opened_norm.png',
       stripTextureUrl: '/packs/pack_strip_norm.png',
+      cardBackTextureUrl: '/back.png',
       initialConfig: {
         tiltSensitivity: 0.0,
         ...config,

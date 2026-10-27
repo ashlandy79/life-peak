@@ -6,33 +6,34 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { CardRepository } from '../../services/CardRepository';
 import { CollectionRepository } from '../../services/CollectionRepository';
 import { CardDefinition, UserCardInstance } from '../../types/card';
-import { colors } from '../../theme/colors';
-import { DoodleStar, DoodleSparkle } from '../../components/DoodleDeco';
+import { DoodleSparkle, DoodleCat } from '../../components/DoodleDeco';
 import { UnsealRecordModal, UnsealRecordOption } from '../../components/UnsealRecordModal';
 import { SlashBurstEffect } from '../../components/SlashBurstEffect';
 import { TcgHoloCard, TcgHoloCardRef } from '../../components/TcgHoloCard';
+import { CosmicParticles } from '../../components/cosmic/CosmicParticles';
+import { PrismBeam } from '../../components/cosmic/PrismBeam';
+import { GroundEnergyRing } from '../../components/cosmic/GroundEnergyRing';
+import { ShinyPillButton } from '../../components/cosmic/ShinyPillButton';
 import type { CardRarityTier } from '../../core/tcgTypes';
-import { CARD_RARITY_TIERS } from '../../core/tcgParameters';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = Math.min(SCREEN_WIDTH - 48, 340);
+const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 345);
 
-export default function CardDetailScreen() {
+export default function CardDetailCosmicScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { instanceId } = useLocalSearchParams<{ instanceId: string }>();
 
   const [instance, setInstance] = useState<UserCardInstance | null>(null);
   const [card, setCard] = useState<CardDefinition | null>(null);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [triggerSlashBurst, setTriggerSlashBurst] = useState(false);
   const [currentTier, setCurrentTier] = useState<CardRarityTier>('rare');
@@ -58,54 +59,43 @@ export default function CardDetailScreen() {
     loadData();
   }, [loadData]);
 
-  const handleFlip = () => {
+  const triggerHaptic = (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Medium) => {
     if (Platform.OS !== 'web') {
       try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.impactAsync(style);
       } catch {
         // ignore
       }
     }
-    tcgCardRef.current?.flipCard();
   };
 
-  const handleRecenter = () => {
-    if (Platform.OS !== 'web') {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch {
-        // ignore
+  const handleSafeBack = useCallback(() => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
       }
+    } catch {
+      router.replace('/(tabs)');
     }
-    tcgCardRef.current?.recenter();
-  };
-
-  const handleToggleFavorite = async () => {
-    if (!instanceId) return;
-    const updated = await CollectionRepository.toggleFavorite(instanceId);
-    if (updated) setInstance({ ...updated });
-  };
+  }, [router]);
 
   const handlePressUnseal = () => {
-    if (Platform.OS !== 'web') {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      } catch {
-        // ignore
-      }
-    }
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setModalVisible(true);
   };
 
   const handleConfirmRecord = (option: UnsealRecordOption, content?: string) => {
     setModalVisible(false);
 
-    // 1. 屏幕中心给出动漫补刀光斩特效
+    // 1. 触发动漫斩击补刀特效
     setTimeout(() => {
       setTriggerSlashBurst(true);
     }, 120);
 
-    // 2. 触发 3D 全息卡片由封印态平滑解封至全息高光态
+    // 2. 触发 3D 全息卡片由封印态原地平滑解封至 2.5D 高光浮动态
     tcgCardRef.current?.unsealCard();
   };
 
@@ -120,9 +110,13 @@ export default function CardDetailScreen() {
     }
   };
 
-  const handleSelectTier = async (newTier: CardRarityTier) => {
-    setCurrentTier(newTier);
-    await tcgCardRef.current?.setTier(newTier);
+  const getFormattedDate = () => {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const date = now.getDate();
+    const dayNames = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    const day = dayNames[now.getDay()];
+    return `${month}月${date}日  ${day}`;
   };
 
   if (!card || !instance) {
@@ -134,117 +128,182 @@ export default function CardDetailScreen() {
   }
 
   const isSealedState = instance.status === 'SEALED';
-  const tierInfo = CARD_RARITY_TIERS[currentTier] || CARD_RARITY_TIERS.rare;
 
   return (
-    <View style={[styles.screen, { paddingTop: Math.max(insets.top, 16) }]}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backButtonText}>← 返回</Text>
-        </TouchableOpacity>
+    <View style={styles.screen}>
+      {/* 1. 深色星空基础底图 */}
+      <Image
+        source={require('../../../assets/draw_bg.png')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
 
-        <View style={styles.topActions}>
-          <TouchableOpacity
-            style={styles.starButton}
-            onPress={handleToggleFavorite}
-            activeOpacity={0.7}
-          >
-            <DoodleStar
-              size={22}
-              color={instance.isFavorite ? '#F5A623' : '#B8AE9E'}
-            />
-          </TouchableOpacity>
+      {/* 2. 宇宙揭晓页：宽幅对角线虹彩棱镜光束 (Prism Beam) */}
+      <PrismBeam />
+
+      {/* 3. 宇宙揭晓页：漂浮星尘粒子与四角菱形星芒 (Cosmic Particles) */}
+      <CosmicParticles particleCount={55} />
+
+      {/* 4. 顶部状态栏与品牌区 (1:1 复刻设计稿) */}
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
+        <View style={styles.revealTopBar}>
+          {/* 左侧：返回按钮 + LIFE PACK 手绘气泡 + 日期 */}
+          <View style={styles.leftNavGroup}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleSafeBack}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.closeText}>←</Text>
+            </TouchableOpacity>
+
+            <View style={styles.brandDateGroup}>
+              <View style={styles.brandBubbleRow}>
+                <View style={styles.lifePackBubble}>
+                  <Text style={styles.lifePackText}>LIFE PACK</Text>
+                </View>
+                <span className="brand-bubble-sparkles">✧ ✧</span>
+              </View>
+              <Text style={styles.dateSubtitleText}>{getFormattedDate()}</Text>
+            </View>
+          </View>
+
+          {/* 右侧：卡片状态 / 01 + 小猫手绘 */}
+          <View style={styles.unlockGroup}>
+            <View style={styles.unlockTextWrapper}>
+              <Text style={styles.unlockText}>
+                {isSealedState ? '封印中的奇遇' : '已解封纪念'}
+              </Text>
+              <div className="unlock-underline" />
+            </View>
+            <View style={styles.catWithSparkles}>
+              <DoodleCat size={26} color="#FAF7F2" />
+              <DoodleSparkle size={10} color="#FDE047" style={styles.catSparkle1} />
+              <DoodleSparkle size={8} color="#67E8F9" style={styles.catSparkle2} />
+            </View>
+          </View>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 30) },
+      {/* 5. 中央舞台区域 */}
+      <View style={styles.stageArea}>
+        <View style={styles.cosmicCardStage}>
+          {/* 地面能量光环 */}
+          <View style={styles.groundRingWrapper}>
+            <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
+          </View>
+
+          {/* 3D 全息卡片本体（封印态或解封态，支持 3D 旋转与翻看） */}
+          <View style={styles.holoCardContainer}>
+            <TcgHoloCard
+              ref={tcgCardRef}
+              card={card}
+              isSealed={isSealedState}
+              tier={currentTier}
+              cardWidth={CARD_WIDTH}
+            />
+          </View>
+
+          {/* 卡片下方全息提示语 */}
+          <View style={styles.holoHintRow}>
+            <Text style={styles.holoHintSparkle}>✧</Text>
+            <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
+            <Text style={styles.holoHintSparkle}>✧</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 6. 底部操作与装饰区域 (1:1 复刻设计稿) */}
+      <View
+        style={[
+          styles.bottomRevealArea,
+          { paddingBottom: Math.max(insets.bottom, 28) + 20 },
         ]}
-        showsVerticalScrollIndicator={false}
       >
-        {/* 3D Holographic Card Stage (默认使用珍珠蓝，隐藏顶部测试切换栏) */}
-        <View style={styles.cardWrapper}>
-          <TcgHoloCard
-            ref={tcgCardRef}
-            card={card}
-            isSealed={isSealedState}
-            tier={currentTier}
-            cardWidth={CARD_WIDTH}
-            onFlipChange={(flipped) => setIsFlipped(flipped)}
+        {/* 主按钮：封印态显示「✦ 解封卡片」，已解封态显示「★ 卡片已解封」 */}
+        {isSealedState ? (
+          <ShinyPillButton
+            label="✦ 解封卡片"
+            onPress={handlePressUnseal}
+            style={styles.mainActionBtn}
           />
+        ) : (
+          <ShinyPillButton
+            label="★ 卡片已解封"
+            onPress={() => {}}
+            style={[styles.mainActionBtn, { opacity: 0.92 }]}
+          />
+        )}
+
+        {/* 次级链接：返回首页 */}
+        <TouchableOpacity
+          onPress={handleSafeBack}
+          activeOpacity={0.75}
+          style={styles.albumLinkBtn}
+        >
+          <Text style={styles.albumLinkText}>返回首页</Text>
+          <div className="album-link-underline" />
+        </TouchableOpacity>
+
+        {/* 底部角落装饰 */}
+        <View style={styles.footerCornerGroup} pointerEvents="none">
+          {/* 左下小猫咪涂鸦 */}
+          <View style={styles.footerLeftCat}>
+            <DoodleCat size={28} color="#CBD5E1" />
+            <DoodleSparkle size={10} color="#FDE047" style={{ position: 'absolute', top: -4, right: -6 }} />
+          </View>
+
+          {/* 右下生活寄语 */}
+          <View style={styles.footerRightQuote}>
+            <Text style={styles.footerQuoteLine}>一张卡</Text>
+            <Text style={styles.footerQuoteLine}>就是一次</Text>
+            <View style={styles.quoteLastRow}>
+              <Text style={styles.footerQuoteLine}>小小的出发。</Text>
+              <Text style={styles.quoteSparkle}>✧</Text>
+            </View>
+          </View>
         </View>
+      </View>
 
-        {/* Interactive Controls Bar */}
-        <View style={styles.cardControlsRow}>
-          <TouchableOpacity
-            style={styles.controlPill}
-            onPress={handleFlip}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.controlPillText}>
-              {isFlipped ? '↺ 翻回正面' : '↻ 翻看卡背'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.controlPill}
-            onPress={handleRecenter}
-            activeOpacity={0.75}
-          >
-            <Text style={styles.controlPillText}>◎ 重置居中</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.dragHintText}>
-          {isSealedState
-            ? '封印态：手指按住卡片滑动可 3D 旋转观察 · 点击翻看背面'
-            : '解封态：滑动 3D 旋转卡面，全息虹彩光束将随倾角流转'}
-        </Text>
-
-        {/* Action Button: 解封 or 记录 */}
-        <View style={styles.actionContainer}>
-          {isSealedState ? (
-            <TouchableOpacity
-              style={styles.unsealButton}
-              onPress={handlePressUnseal}
-              activeOpacity={0.85}
-            >
-              <DoodleSparkle size={18} color="#FAF7F2" />
-              <Text style={styles.unsealButtonText}>解封卡片</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.writeMemoryButton}
-              onPress={() => router.push(`/memory/${instance.instanceId}` as any)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.writeMemoryText}>
-                {instance.memoryText ? '修改手账记录' : '留下手账记忆'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Unseal Record Modal */}
+      {/* 7. 解封心境/打卡记录弹窗 */}
       <UnsealRecordModal
         visible={modalVisible}
-        onClose={() => setModalVisible(false)}
         onConfirm={handleConfirmRecord}
+        onClose={() => setModalVisible(false)}
       />
 
-      {/* Center Stage Slash Burst Effect */}
+      {/* 8. 动漫全屏补刀斩裂冲击波特效 */}
       <SlashBurstEffect
         active={triggerSlashBurst}
         onComplete={handleSlashBurstComplete}
       />
+
+      {/* 页面全局样式补充 */}
+      <style>{`
+        .brand-bubble-sparkles {
+          color: #fde047;
+          font-size: 13px;
+          margin-left: 6px;
+          letter-spacing: 2px;
+          filter: drop-shadow(0 0 6px rgba(253, 224, 71, 0.7));
+        }
+
+        .unlock-underline {
+          width: 100%;
+          height: 1.5px;
+          background: linear-gradient(90deg, rgba(203, 213, 225, 0.8), transparent);
+          margin-top: 3px;
+          border-radius: 1px;
+        }
+
+        .album-link-underline {
+          width: 52px;
+          height: 1.5px;
+          background: rgba(255, 255, 255, 0.7);
+          margin-top: 4px;
+          border-radius: 1px;
+        }
+      `}</style>
     </View>
   );
 }
@@ -252,147 +311,207 @@ export default function CardDetailScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#0F1219',
+    backgroundColor: '#070a12',
+    overflow: 'hidden',
   },
   center: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   loadingText: {
+    color: '#94a3b8',
     fontSize: 14,
-    color: '#94A3B8',
+    fontWeight: '500',
   },
   topBar: {
+    paddingHorizontal: 16,
+    zIndex: 50,
+  },
+  revealTopBar: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  backButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#E2E8F0',
-  },
-  topActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  starButton: {
-    padding: 6,
-  },
-  scrollContent: {
-    alignItems: 'center',
     paddingTop: 4,
   },
-  tierSelectorRow: {
+  leftNavGroup: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  closeButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  closeText: {
+    color: '#FAF7F2',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  brandDateGroup: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  brandBubbleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  lifePackBubble: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#FAF7F2',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    transform: [{ rotate: '-4deg' }],
+  },
+  lifePackText: {
+    color: '#FAF7F2',
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  dateSubtitleText: {
+    color: '#E2E8F0',
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 6,
+    letterSpacing: 0.5,
+  },
+  unlockGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginVertical: 8,
+    paddingTop: 2,
   },
-  tierButton: {
-    flexDirection: 'row',
+  unlockTextWrapper: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  unlockText: {
+    color: '#E2E8F0',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  catWithSparkles: {
+    position: 'relative',
+    padding: 2,
+  },
+  catSparkle1: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+  },
+  catSparkle2: {
+    position: 'absolute',
+    bottom: -2,
+    left: -4,
+  },
+  stageArea: {
+    flex: 1,
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
-    backgroundColor: 'rgba(30, 41, 59, 0.45)',
+    justifyContent: 'center',
+    position: 'relative',
   },
-  tierDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  tierText: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '500',
-  },
-  cardWrapper: {
+  cosmicCardStage: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 4,
+    position: 'relative',
+    zIndex: 35,
   },
-  cardControlsRow: {
+  groundRingWrapper: {
+    position: 'absolute',
+    bottom: 22,
+    zIndex: 1,
+  },
+  holoCardContainer: {
+    zIndex: 10,
+    marginBottom: 4,
+  },
+  holoHintRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
-  },
-  controlPill: {
-    backgroundColor: 'rgba(30, 41, 59, 0.65)',
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#475569',
-  },
-  controlPillText: {
-    fontSize: 12,
-    color: '#E2E8F0',
-    fontWeight: '600',
-  },
-  dragHintText: {
-    fontSize: 11,
-    color: '#64748B',
+    justifyContent: 'center',
+    gap: 6,
     marginTop: 10,
-    marginBottom: 16,
-    textAlign: 'center',
-    paddingHorizontal: 24,
+    zIndex: 20,
   },
-  actionContainer: {
-    width: CARD_WIDTH,
-    marginTop: 4,
+  holoHintSparkle: {
+    color: '#67E8F9',
+    fontSize: 11,
+    textShadowColor: 'rgba(103, 232, 249, 0.7)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
-  unsealButton: {
+  holoHintText: {
+    color: '#E2E8F0',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(103, 232, 249, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  bottomRevealArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 45,
+    paddingHorizontal: 20,
+    position: 'relative',
+    minHeight: 140,
+  },
+  mainActionBtn: {
+    marginBottom: 14,
+  },
+  albumLinkBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    marginBottom: 6,
+  },
+  albumLinkText: {
+    color: 'rgba(255, 255, 255, 0.82)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+  },
+  footerCornerGroup: {
+    ...StyleSheet.absoluteFill,
+    pointerEvents: 'none',
+  },
+  footerLeftCat: {
+    position: 'absolute',
+    bottom: 12,
+    left: 20,
+  },
+  footerRightQuote: {
+    position: 'absolute',
+    bottom: 14,
+    right: 20,
+    alignItems: 'flex-end',
+  },
+  footerQuoteLine: {
+    color: '#CBD5E1',
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.8,
+    lineHeight: 16,
+  },
+  quoteLastRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#0F172A',
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: '#67E8F9',
-    shadowColor: '#38BDF8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 5,
+    gap: 2,
   },
-  unsealButtonText: {
-    color: '#FAF7F2',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 1,
-  },
-  writeMemoryButton: {
-    backgroundColor: '#38BDF8',
-    paddingVertical: 14,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#38BDF8',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  writeMemoryText: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.8,
+  quoteSparkle: {
+    color: '#FDE047',
+    fontSize: 9,
   },
 });

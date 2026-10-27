@@ -31,7 +31,7 @@ import { ShinyPillButton } from '../../components/cosmic/ShinyPillButton';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PACK_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
 const PACK_HEIGHT = Math.round(PACK_WIDTH * (924 / 565));
-const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.74, 320);
+const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 345);
 
 export default function PackOpeningScreen() {
   const router = useRouter();
@@ -89,7 +89,7 @@ export default function PackOpeningScreen() {
     }
   }, [router]);
 
-  // 收下这张卡 -> 持久化入库并进入卡片详情
+  // 收下这张卡 -> 持久化入库并返回首页，触发飞星入卡册特效
   const handleAcceptCard = async () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     if (drawResult) {
@@ -97,22 +97,34 @@ export default function PackOpeningScreen() {
         ...drawResult.instance,
         status: 'SEALED',
       });
-      router.replace(`/card/${drawResult.instance.instanceId}` as any);
+      router.replace({
+        pathname: '/(tabs)',
+        params: { flyStar: '1' },
+      } as any);
     } else {
       router.replace('/(tabs)');
     }
   };
 
-  // 查看卡册 -> 持久化入库并进入图鉴卡册
-  const handleViewAlbum = async () => {
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+  // 再抽一张 -> 自动入库当前卡片，重置舞台并抽取新卡
+  const handleDrawAgain = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     if (drawResult) {
       await DrawService.commitDraw(drawResult.pack.id, {
         ...drawResult.instance,
         status: 'SEALED',
       });
     }
-    router.replace('/(tabs)/album' as any);
+    const newRes = await DrawService.drawFromPack('pack-series-01');
+    setDrawResult(newRes);
+    cardOpacity.value = 0;
+    cardScale.value = 0.92;
+    cardTranslateY.value = 20;
+    controlsOpacity.value = 0;
+    controlsTranslateY.value = 24;
+    lastReportedProgressRef.current = 0;
+    setTearProgress(0);
+    setStage('SEALED');
   };
 
   // Three.js 物理撕开 + 破袋升起 + 360° 翻转完成触发回调
@@ -168,8 +180,12 @@ export default function PackOpeningScreen() {
       {/* 2. 宇宙揭晓页：宽幅对角线虹彩棱镜光束 (Prism Beam) */}
       {stage === 'SEALED_SHOWN' && <PrismBeam />}
 
-      {/* 3. 宇宙揭晓页：漂浮星尘粒子与四角菱形星芒 (Cosmic Particles) */}
-      {stage === 'SEALED_SHOWN' && <CosmicParticles particleCount={55} />}
+      {/* 3. 星尘粒子：撕包阶段微弱神秘点缀，揭晓阶段绚丽绽放 */}
+      {stage === 'SEALED' ? (
+        <CosmicParticles faint={true} particleCount={24} />
+      ) : (
+        <CosmicParticles particleCount={55} />
+      )}
 
       {/* 4. 顶部状态栏与品牌区 (1:1 复刻设计稿) */}
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
@@ -276,7 +292,7 @@ export default function PackOpeningScreen() {
           style={[
             styles.bottomRevealArea,
             animatedControlsStyle,
-            { paddingBottom: Math.max(insets.bottom, 16) },
+            { paddingBottom: Math.max(insets.bottom, 28) + 20 },
           ]}
         >
           {/* 主按钮：收下这张卡 -> */}
@@ -286,13 +302,13 @@ export default function PackOpeningScreen() {
             style={styles.mainActionBtn}
           />
 
-          {/* 次级链接：查看卡册 */}
+          {/* 次级链接：再抽一张 */}
           <TouchableOpacity
-            onPress={handleViewAlbum}
+            onPress={handleDrawAgain}
             activeOpacity={0.75}
             style={styles.albumLinkBtn}
           >
-            <Text style={styles.albumLinkText}>查看卡册</Text>
+            <Text style={styles.albumLinkText}>再抽一张</Text>
             <div className="album-link-underline" />
           </TouchableOpacity>
 
@@ -336,7 +352,7 @@ export default function PackOpeningScreen() {
         }
 
         .album-link-underline {
-          width: 58px;
+          width: 52px;
           height: 1.5px;
           background: rgba(255, 255, 255, 0.7);
           margin-top: 4px;
@@ -525,10 +541,10 @@ const styles = StyleSheet.create({
     zIndex: 45,
     paddingHorizontal: 20,
     position: 'relative',
-    minHeight: 130,
+    minHeight: 140,
   },
   mainActionBtn: {
-    marginBottom: 10,
+    marginBottom: 14,
   },
   albumLinkBtn: {
     alignItems: 'center',

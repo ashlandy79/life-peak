@@ -17,10 +17,11 @@ interface Particle {
   rotSpeed?: number;
 }
 
-export const CosmicParticles: React.FC<{ particleCount?: number; style?: any }> = ({
-  particleCount = 50,
-  style,
-}) => {
+export const CosmicParticles: React.FC<{
+  particleCount?: number;
+  faint?: boolean;
+  style?: any;
+}> = ({ particleCount = 50, faint = false, style }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -51,17 +52,18 @@ export const CosmicParticles: React.FC<{ particleCount?: number; style?: any }> 
     ];
 
     const particles: Particle[] = [];
-    for (let i = 0; i < particleCount; i++) {
-      const isDiamond = i % 7 === 0;
+    const count = faint ? Math.min(particleCount, 32) : particleCount;
+    for (let i = 0; i < count; i++) {
+      const isDiamond = !faint && i % 7 === 0;
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        radius: isDiamond ? 2.5 : Math.random() * 1.5 + 0.6,
-        speedY: -(Math.random() * 12 + 4) / 60, // slow upward drift
-        speedX: (Math.random() - 0.5) * 6 / 60,
+        radius: isDiamond ? 2.5 : (faint ? Math.random() * 1.2 + 0.5 : Math.random() * 1.5 + 0.6),
+        speedY: faint ? -(Math.random() * 6 + 2) / 60 : -(Math.random() * 12 + 4) / 60,
+        speedX: (Math.random() - 0.5) * (faint ? 3 : 6) / 60,
         phase: Math.random() * Math.PI * 2,
         phaseSpeed: (Math.random() * 0.8 + 0.4) / 60,
-        baseAlpha: isDiamond ? 0.75 : Math.random() * 0.4 + 0.25,
+        baseAlpha: isDiamond ? 0.75 : (faint ? Math.random() * 0.25 + 0.12 : Math.random() * 0.4 + 0.25),
         color: colors[Math.floor(Math.random() * colors.length)],
         isDiamond,
         diamondSize: isDiamond ? Math.random() * 6 + 6 : 0,
@@ -167,7 +169,7 @@ export const CosmicParticles: React.FC<{ particleCount?: number; style?: any }> 
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [particleCount]);
+  }, [particleCount, faint]);
 
   if (Platform.OS !== 'web') return null;
 

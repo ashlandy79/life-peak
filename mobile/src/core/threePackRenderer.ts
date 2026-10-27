@@ -63,6 +63,7 @@ export interface MountThreePackOptions {
   sealedTextureUrl?: string;
   openedTextureUrl?: string;
   stripTextureUrl?: string;
+  cardBackTextureUrl?: string;
   initialConfig?: Partial<ThreePackConfig>;
   onTearProgress?: (progress: number) => void;
 }
@@ -448,41 +449,30 @@ export function mountThreePack(
   backMesh.position.set(0, 0, -0.12);
   packGroup.add(backMesh);
 
-  // 5.2 实体卡片 (Card inside pocket) - 卡包破袋后升起居中
+  // 5.2 实体卡片 (Card inside pocket) - 采用真实卡背贴图，消除粗糙假卡旋转中转
   const cardW = 1.34;
   const cardH = 1.88;
   const cardGeo = new THREE.PlaneGeometry(cardW, cardH);
-  const cardFrontCanvas = createCardCanvas(true);
-  const cardFrontTex = new THREE.CanvasTexture(cardFrontCanvas);
-  cardFrontTex.colorSpace = THREE.SRGBColorSpace;
 
-  const cardBackCanvas = createCardCanvas(false);
-  const cardBackTex = new THREE.CanvasTexture(cardBackCanvas);
+  const cardBackTex = textureLoader.load(
+    options.cardBackTextureUrl || '/back.png'
+  );
   cardBackTex.colorSpace = THREE.SRGBColorSpace;
 
   const cardMat = new THREE.MeshStandardMaterial({
-    map: cardFrontTex,
-    roughness: 0.3,
-    metalness: 0.4,
-    side: THREE.FrontSide,
-  });
-  const cardBackMat = new THREE.MeshStandardMaterial({
     map: cardBackTex,
-    roughness: 0.3,
-    metalness: 0.4,
-    side: THREE.BackSide,
+    roughness: 0.35,
+    metalness: 0.2,
+    side: THREE.DoubleSide,
   });
 
   const cardGroup = new THREE.Group();
   const cardMesh = new THREE.Mesh(cardGeo, cardMat);
-  const cardBackMesh = new THREE.Mesh(cardGeo, cardBackMat);
   cardGroup.add(cardMesh);
-  cardGroup.add(cardBackMesh);
 
   const cardBaseY = -0.42;
   cardGroup.position.set(0, cardBaseY, -0.04);
-  // 初始背面朝向用户
-  cardGroup.rotation.y = Math.PI;
+  cardGroup.rotation.y = 0;
   rootGroup.add(cardGroup);
 
   // 5.3 袋身前膜 (Front Pouch Body)
@@ -627,7 +617,7 @@ export function mountThreePack(
 
       cardGroup.position.set(0, cardBaseY, -0.04);
       cardGroup.scale.set(1.0, 1.0, 1.0);
-      cardGroup.rotation.set(0, Math.PI, 0);
+      cardGroup.rotation.set(0, 0, 0);
     } else {
       const dropT = Math.min(1.0, Math.max(0.0, (cp - 0.10) / 0.90));
       const dropY = -Math.pow(dropT, 1.6) * 4.4;
@@ -658,8 +648,8 @@ export function mountThreePack(
       cardGroup.scale.set(targetScale, targetScale, 1.0);
       cardGroup.position.set(0, targetCardY, targetCardZ);
 
-      // 卡片居中时完成翻转（从背面旋转至正面，角位移从 PI 到 0）
-      cardGroup.rotation.y = THREE.MathUtils.lerp(Math.PI, 0, cp);
+      // 卡片顺畅升起，保持真实的卡背朝向，不再执行扭曲粗糙的假卡自转
+      cardGroup.rotation.y = 0;
     }
 
     // 6.4 移动端专属纯净静置视角（保持正面正对用户，杜绝手势滑动时卡包视角晃动）
@@ -742,7 +732,7 @@ export function mountThreePack(
       backMat.opacity = 1.0;
       cardGroup.position.set(0, cardBaseY, -0.04);
       cardGroup.scale.set(1.0, 1.0, 1.0);
-      cardGroup.rotation.set(0, Math.PI, 0);
+      cardGroup.rotation.set(0, 0, 0);
     },
     dispose: () => {
       cancelAnimationFrame(reqId);
@@ -757,7 +747,7 @@ export function mountThreePack(
       stripMat.dispose();
       backMat.dispose();
       cardMat.dispose();
-      cardBackMat.dispose();
+      cardBackTex.dispose();
       sparkMat.dispose();
       if (renderer.domElement && renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);

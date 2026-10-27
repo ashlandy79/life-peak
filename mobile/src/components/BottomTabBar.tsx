@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { colors } from '../theme/colors';
+import { BadgeService } from '../services/BadgeService';
 
 interface TabItem {
   key: string;
@@ -27,6 +28,20 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   onSelectTab,
 }) => {
   const insets = useSafeAreaInsets();
+  const [hasAlbumBadge, setHasAlbumBadge] = useState(BadgeService.getAlbumBadge());
+
+  useEffect(() => {
+    return BadgeService.subscribe(() => {
+      setHasAlbumBadge(BadgeService.getAlbumBadge());
+    });
+  }, []);
+
+  const handlePressTab = (key: string, route: string) => {
+    if (key === 'album') {
+      BadgeService.setAlbumBadge(false);
+    }
+    onSelectTab(key, route);
+  };
 
   const renderIcon = (key: string, active: boolean) => {
     const iconColor = active ? colors.moss : '#9C9384';
@@ -146,11 +161,16 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
           <TouchableOpacity
             key={tab.key}
             style={styles.tabButton}
-            onPress={() => onSelectTab(tab.key, tab.route)}
+            onPress={() => handlePressTab(tab.key, tab.route)}
             activeOpacity={0.7}
           >
             <View style={styles.iconWrapper}>
               {renderIcon(tab.key, isActive)}
+              {tab.key === 'album' && hasAlbumBadge && (
+                <View style={styles.albumBadge}>
+                  <Text style={styles.albumBadgeText}>1</Text>
+                </View>
+              )}
             </View>
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
               {tab.label}
@@ -203,5 +223,28 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: colors.moss,
     marginTop: 2,
+  },
+  albumBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#EF4444',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+  },
+  albumBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
   },
 });

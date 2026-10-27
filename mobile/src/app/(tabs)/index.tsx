@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -6,15 +6,17 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { BrandHeader } from '../../components/BrandHeader';
 import { HolographicPackCard } from '../../components/HolographicPackCard';
 import { DailyTasksPanel } from '../../components/DailyTasksPanel';
 import { PuzzlePreviewPanel } from '../../components/PuzzlePreviewPanel';
+import { FlyingStarToAlbum } from '../../components/FlyingStarToAlbum';
 import { TaskRepository } from '../../services/TaskRepository';
 import { PackRepository } from '../../services/PackRepository';
 import { CollectionRepository } from '../../services/CollectionRepository';
 import { CardRepository } from '../../services/CardRepository';
+import { BadgeService } from '../../services/BadgeService';
 import { TaskItem, PuzzleState } from '../../types/task';
 import { PackDefinition } from '../../types/pack';
 import { CardDefinition, UserCardInstance } from '../../types/card';
@@ -22,12 +24,20 @@ import { colors } from '../../theme/colors';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ flyStar?: string }>();
   const [pack, setPack] = useState<PackDefinition | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [puzzleState, setPuzzleState] = useState<PuzzleState | null>(null);
   const [sealedCard, setSealedCard] = useState<CardDefinition | null>(null);
   const [sealedInstance, setSealedInstance] = useState<UserCardInstance | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFlyingStar, setShowFlyingStar] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.flyStar === '1') {
+      setShowFlyingStar(true);
+    }
+  }, [searchParams.flyStar]);
 
   const loadData = useCallback(async () => {
     try {
@@ -100,6 +110,13 @@ export default function HomeScreen() {
     );
   };
 
+  const handleFlyingStarComplete = () => {
+    setShowFlyingStar(false);
+    BadgeService.setAlbumBadge(true);
+    // Clear the flyStar query parameter without re-rendering or navigating away
+    router.setParams({ flyStar: undefined } as any);
+  };
+
   return (
     <View style={styles.screen}>
       <BrandHeader
@@ -147,6 +164,11 @@ export default function HomeScreen() {
           />
         )}
       </ScrollView>
+
+      {/* Flying Star into Album TabBar Animation */}
+      {showFlyingStar && (
+        <FlyingStarToAlbum onComplete={handleFlyingStarComplete} />
+      )}
     </View>
   );
 }

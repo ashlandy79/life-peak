@@ -20,7 +20,7 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { DoodleCat, DoodleSparkle, DoodleStar, DoodlePlanet } from './DoodleDeco';
 import { CardDefinition } from '../types/card';
-import { PearlBlueFoilCard } from './PearlBlueFoilCard';
+import { StaticCardView } from './StaticCardView';
 
 interface HolographicPackCardProps {
   onOpenPack: () => void;
@@ -130,7 +130,7 @@ export const HolographicPackCard: React.FC<HolographicPackCardProps> = ({
       >
         <Animated.View style={[styles.packWrapper, animatedPackStyle]}>
           {isSealedCard && sealedCard ? (
-            <PearlBlueFoilCard
+            <StaticCardView
               card={sealedCard}
               width={PACK_WIDTH}
               height={PACK_HEIGHT * 0.9}
