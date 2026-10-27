@@ -187,18 +187,20 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
           const uiUrl = await generateUiTexture(isSealed, effectiveTier);
           if (cancelled) return;
 
+          const TRANSPARENT_PIXEL =
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+          const isAlbumCard = Boolean(card?.id?.startsWith('card-lp-') && card?.previewImage);
+
           const backgroundUrl = resolveAssetUrl(
-            card?.backgroundImage,
+            isAlbumCard ? card?.previewImage : (card?.backgroundImage || card?.previewImage),
             customAssets?.background || '/forest_bg.jpg'
           );
-          const characterUrl = resolveAssetUrl(
-            card?.subjectImage,
-            customAssets?.character || '/link_subject.png'
-          );
-          const structureUrl = resolveAssetUrl(
-            card?.subjectImage,
-            customAssets?.structure || '/link_subject.png'
-          );
+          const characterUrl = isAlbumCard
+            ? TRANSPARENT_PIXEL
+            : resolveAssetUrl(card?.subjectImage, customAssets?.character || '/link_subject.png');
+          const structureUrl = isAlbumCard
+            ? backgroundUrl
+            : resolveAssetUrl(card?.subjectImage, customAssets?.structure || '/link_subject.png');
           const backUrl = resolveAssetUrl(
             card?.backLiningImage,
             customAssets?.back || '/back.png'

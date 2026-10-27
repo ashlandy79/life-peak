@@ -6,8 +6,8 @@ export type UserCardStatus =
 
 export interface CardDefinition {
   id: string;
-  cardCode: string;           // 如 LP-0027
-  title: string;              // 标题：奇遇特饮、午后公园等
+  cardCode: string;           // 如 LP-0027 或 #027
+  title: string;              // 标题：奇遇特饮、夜宵猫行者等
   subtitle: string;
   seriesId: string;
   seriesName: string;
@@ -21,6 +21,7 @@ export interface CardDefinition {
   subjectImage?: any;        // 透明主体图
   backLiningImage?: any;
   tier?: 'rare' | 'advanced' | 'common';
+  rarityTag?: 'UR' | 'SSR' | 'SR' | 'R';
 }
 
 export interface UserCardInstance {

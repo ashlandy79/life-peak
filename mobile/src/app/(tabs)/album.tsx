@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,32 +6,42 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { CardRepository } from '../../services/CardRepository';
 import { CollectionRepository } from '../../services/CollectionRepository';
 import { CardDefinition, UserCardInstance } from '../../types/card';
-import { CardGridItem } from '../../components/CardGridItem';
-import { colors } from '../../theme/colors';
-import { DoodleSparkle } from '../../components/DoodleDeco';
+import { DoodleSparkle, DoodleCat } from '../../components/DoodleDeco';
+import { CosmicParticles } from '../../components/cosmic/CosmicParticles';
+import { MOCK_CARDS } from '../../data/mockCards';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const GRID_PADDING = 20;
-const GRID_GAP = 12;
-const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
+const { width: WINDOW_WIDTH } = Dimensions.get('window');
+const CONTAINER_MAX_WIDTH = 440;
+const PADDING = 14;
+const GAP = 8;
+
+type TopNavTab = 'album' | 'achievement' | 'favorite';
+type FilterType = 'ALL' | 'COLLECTED' | 'UNCOLLECTED' | 'RARE';
 
 export default function AlbumScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [allCards, setAllCards] = useState<CardDefinition[]>([]);
+
+  const [topTab, setTopTab] = useState<TopNavTab>('album');
+  const [filter, setFilter] = useState<FilterType>('ALL');
+  const [allCards, setAllCards] = useState<CardDefinition[]>(MOCK_CARDS);
   const [userInstances, setUserInstances] = useState<UserCardInstance[]>([]);
-  const [filter, setFilter] = useState<'ALL' | 'FAVORITE'>('ALL');
 
   const loadData = useCallback(async () => {
     const cards = await CardRepository.getAllCards();
     const instances = await CollectionRepository.getUserCardInstances();
-    setAllCards(cards);
+    if (cards && cards.length > 0) {
+      setAllCards(cards);
+    }
     setUserInstances(instances);
   }, []);
 
@@ -41,96 +51,365 @@ export default function AlbumScreen() {
     }, [loadData])
   );
 
-  const collectedInstanceMap = new Map<string, UserCardInstance>();
-  userInstances.forEach((inst) => {
-    if (inst.status === 'COLLECTED' || inst.status === 'ACTIVE' || inst.status === 'COMPLETED') {
-      collectedInstanceMap.set(inst.cardId, inst);
+  const triggerHaptic = (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) => {
+    if (Platform.OS !== 'web') {
+      try {
+        Haptics.impactAsync(style);
+      } catch {
+        // ignore
+      }
     }
-  });
+  };
 
-  const collectedCount = userInstances.filter((i) => i.status === 'COLLECTED').length;
+  // Map of collected cards
+  const collectedCardIdSet = useMemo(() => {
+    const set = new Set<string>();
+    userInstances.forEach((inst) => {
+      if (inst.status === 'COLLECTED' || inst.status === 'ACTIVE' || inst.status === 'COMPLETED') {
+        set.add(inst.cardId);
+      }
+    });
+    return set;
+  }, [userInstances]);
+
+  // Counts for pills
+  const totalCount = allCards.length;
+  const collectedCount = userInstances.filter((i) => i.status === 'COLLECTED').length || 12;
+  const uncollectedCount = Math.max(totalCount - collectedCount, 4);
+  const rareCount = allCards.filter(
+    (c) => c.rarityTag === 'UR' || c.rarityTag === 'SSR'
+  ).length || 8;
+
+  // Filtered card list
+  const filteredCards = useMemo(() => {
+    if (topTab === 'favorite') {
+      return allCards.filter((c) => collectedCardIdSet.has(c.id));
+    }
+    switch (filter) {
+      case 'COLLECTED':
+        return allCards.filter((c) => collectedCardIdSet.has(c.id));
+      case 'UNCOLLECTED':
+        return allCards.filter((c) => !collectedCardIdSet.has(c.id));
+      case 'RARE':
+        return allCards.filter((c) => c.rarityTag === 'UR' || c.rarityTag === 'SSR');
+      case 'ALL':
+      default:
+        return allCards;
+    }
+  }, [allCards, filter, topTab, collectedCardIdSet]);
+
+  const handleCardPress = (card: CardDefinition) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    router.push({
+      pathname: '/card/[instanceId]',
+      params: { instanceId: card.id, from: 'album' },
+    });
+  };
+
+  const handleBannerPress = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const featuredCard = allCards.find((c) => c.cardCode === '#027') || allCards[0];
+    if (featuredCard) {
+      router.push({
+        pathname: '/card/[instanceId]',
+        params: { instanceId: featuredCard.id, from: 'album' },
+      });
+    }
+  };
+
+  // Calculate 4-column dimensions
+  const contentWidth = Math.min(WINDOW_WIDTH, CONTAINER_MAX_WIDTH);
+  const cardWidth = Math.floor((contentWidth - PADDING * 2 - GAP * 3) / 4);
+  const cardHeight = Math.floor(cardWidth * 1.38);
 
   return (
-    <View style={[styles.screen, { paddingTop: Math.max(insets.top, 16) }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>我的卡册</Text>
-          <DoodleSparkle size={18} color={colors.bronze} />
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>
-              已集 {collectedCount} / 48
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.subtitle}>
-          每一张卡片，都是一段值得珍藏的慢速生活碎片。
-        </Text>
+    <View style={styles.screen}>
+      {/* 1. Deep cosmic starry background */}
+      <Image
+        source={require('../../../assets/draw_bg.png')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+      />
 
-        {/* Filter Pills */}
-        <View style={styles.filterRow}>
-          <TouchableOpacity
-            style={[styles.filterPill, filter === 'ALL' && styles.filterPillActive]}
-            onPress={() => setFilter('ALL')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.filterText, filter === 'ALL' && styles.filterTextActive]}>
-              全部图鉴
-            </Text>
-          </TouchableOpacity>
+      {/* 2. Twinkling cosmic particles */}
+      <CosmicParticles particleCount={36} />
 
-          <TouchableOpacity
-            style={[styles.filterPill, filter === 'FAVORITE' && styles.filterPillActive]}
-            onPress={() => setFilter('FAVORITE')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.filterText, filter === 'FAVORITE' && styles.filterTextActive]}>
-              已点亮收藏
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Grid */}
+      {/* 3. Main Scrollable Container */}
       <ScrollView
-        style={styles.gridScroll}
-        contentContainerStyle={styles.gridContent}
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: Math.max(insets.top, 14),
+            paddingBottom: Math.max(insets.bottom, 24) + 80,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.gridRow}>
-          {allCards.map((card) => {
-            const instance = collectedInstanceMap.get(card.id);
-            const isUnlocked = !!instance;
+        <View style={[styles.mainWrapper, { maxWidth: CONTAINER_MAX_WIDTH }]}>
+          {/* Header Bar: LIFE PACK bubble, center tabs, mascot cat */}
+          <View style={styles.headerBar}>
+            {/* Left brand pill */}
+            <View style={styles.brandPill}>
+              <Text style={styles.brandText}>LIFE PACK</Text>
+              <Text style={styles.brandSparkle}>✧</Text>
+            </View>
 
-            if (filter === 'FAVORITE' && !isUnlocked) {
-              return null;
-            }
-
-            return (
-              <CardGridItem
-                key={card.id}
-                card={card}
-                instance={instance}
-                isLocked={!isUnlocked}
-                width={CARD_WIDTH}
+            {/* Center navigation tabs: 卡册 | 成就 | 收藏 */}
+            <View style={styles.topTabsGroup}>
+              <TouchableOpacity
+                style={styles.topTabItem}
                 onPress={() => {
-                  if (instance) {
-                    router.push(`/card/${instance.instanceId}` as any);
-                  }
+                  triggerHaptic();
+                  setTopTab('album');
                 }}
-              />
-            );
-          })}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.topTabText,
+                    topTab === 'album' && styles.topTabTextActive,
+                  ]}
+                >
+                  卡册
+                </Text>
+                {topTab === 'album' && <View style={styles.topTabIndicator} />}
+              </TouchableOpacity>
 
-          {/* Fill with a couple empty slots to show collection album feel */}
-          {filter === 'ALL' && (
-            <>
-              <CardGridItem isLocked width={CARD_WIDTH} onPress={() => {}} />
-              <CardGridItem isLocked width={CARD_WIDTH} onPress={() => {}} />
-            </>
-          )}
+              <TouchableOpacity
+                style={styles.topTabItem}
+                onPress={() => {
+                  triggerHaptic();
+                  setTopTab('achievement');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.topTabText,
+                    topTab === 'achievement' && styles.topTabTextActive,
+                  ]}
+                >
+                  成就
+                </Text>
+                {topTab === 'achievement' && <View style={styles.topTabIndicator} />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.topTabItem}
+                onPress={() => {
+                  triggerHaptic();
+                  setTopTab('favorite');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.topTabText,
+                    topTab === 'favorite' && styles.topTabTextActive,
+                  ]}
+                >
+                  收藏
+                </Text>
+                {topTab === 'favorite' && <View style={styles.topTabIndicator} />}
+              </TouchableOpacity>
+            </View>
+
+            {/* Right mascot doodle cat */}
+            <View style={styles.headerRightCat}>
+              <DoodleCat size={26} color="#FAF7F2" />
+              <DoodleSparkle
+                size={9}
+                color="#FDE047"
+                style={{ position: 'absolute', top: -3, right: -5 }}
+              />
+            </View>
+          </View>
+
+          {/* Slogan */}
+          <View style={styles.sloganRow}>
+            <Text style={styles.sloganText}>✧ 收集每一个值得纪念的瞬间 ✧</Text>
+          </View>
+
+          {/* Featured Showcase Banner (本期精选 稀有) */}
+          <TouchableOpacity
+            style={styles.showcaseBanner}
+            onPress={handleBannerPress}
+            activeOpacity={0.88}
+          >
+            <View style={styles.bannerLeft}>
+              <View style={styles.bannerTagRow}>
+                <View style={styles.bannerTagPill}>
+                  <Text style={styles.bannerTagText}>本期精选 稀有</Text>
+                </View>
+              </View>
+
+              <Text style={styles.bannerTitle}>星空漫游</Text>
+              <Text style={styles.bannerSubtitle}>第 04 期 · 限定闪卡已上线</Text>
+
+              <View style={styles.bannerDetailBtn}>
+                <Text style={styles.bannerDetailBtnText}>查看详情 →</Text>
+              </View>
+            </View>
+
+            <View style={styles.bannerRight}>
+              <Image
+                source={require('../../../assets/cards/album/banner_showcase.png')}
+                style={styles.bannerImage}
+                contentFit="contain"
+              />
+            </View>
+          </TouchableOpacity>
+
+          {/* Filter Pills */}
+          <View style={styles.filterRow}>
+            <TouchableOpacity
+              style={[styles.filterPill, filter === 'ALL' && styles.filterPillActive]}
+              onPress={() => {
+                triggerHaptic();
+                setFilter('ALL');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  filter === 'ALL' && styles.filterPillTextActive,
+                ]}
+              >
+                全部
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterPill,
+                filter === 'COLLECTED' && styles.filterPillActive,
+              ]}
+              onPress={() => {
+                triggerHaptic();
+                setFilter('COLLECTED');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  filter === 'COLLECTED' && styles.filterPillTextActive,
+                ]}
+              >
+                已收集 36
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterPill,
+                filter === 'UNCOLLECTED' && styles.filterPillActive,
+              ]}
+              onPress={() => {
+                triggerHaptic();
+                setFilter('UNCOLLECTED');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  filter === 'UNCOLLECTED' && styles.filterPillTextActive,
+                ]}
+              >
+                未收集 12
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.filterPill, filter === 'RARE' && styles.filterPillActive]}
+              onPress={() => {
+                triggerHaptic();
+                setFilter('RARE');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.filterPillText,
+                  filter === 'RARE' && styles.filterPillTextActive,
+                ]}
+              >
+                稀有 5
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* 4-Column Card Grid */}
+          <View style={styles.gridContainer}>
+            {filteredCards.map((card, idx) => {
+              const isCollected = collectedCardIdSet.has(card.id);
+              const rarity = card.rarityTag || 'SR';
+
+              return (
+                <TouchableOpacity
+                  key={card.id || `card-${idx}`}
+                  style={[
+                    styles.cardWrapper,
+                    { width: cardWidth, height: cardHeight },
+                  ]}
+                  onPress={() => handleCardPress(card)}
+                  activeOpacity={0.8}
+                >
+                  {/* Holographic metallic double border */}
+                  <View style={styles.cardBorderFrame}>
+                    {/* Thumbnail Artwork */}
+                    <Image
+                      source={card.previewImage}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                    />
+
+                    {/* Top Meta: Card Code + Rarity Badge */}
+                    <View style={styles.cardHeaderRow}>
+                      <View style={styles.cardCodeBadge}>
+                        <Text style={styles.cardCodeText}>
+                          {card.cardCode || `#0${idx + 1}`}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.rarityBadge,
+                          rarity === 'UR' && styles.rarityUR,
+                          rarity === 'SSR' && styles.raritySSR,
+                          rarity === 'SR' && styles.raritySR,
+                          rarity === 'R' && styles.rarityR,
+                        ]}
+                      >
+                        <Text style={styles.rarityText}>{rarity}</Text>
+                      </View>
+                    </View>
+
+                    {/* Bottom Title Bar with dark fade */}
+                    <View style={styles.cardTitleBar}>
+                      <Text style={styles.cardTitleText} numberOfLines={1}>
+                        {card.title}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       </ScrollView>
+
+      {/* Web enhancement styles */}
+      {Platform.OS === 'web' && (
+        <style>{`
+          .album-glow-card {
+            box-shadow: 0 8px 32px rgba(14, 165, 233, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          }
+        `}</style>
+      )}
     </View>
   );
 }
@@ -138,75 +417,299 @@ export default function AlbumScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.paper,
+    backgroundColor: '#070913',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+  scroll: {
+    flex: 1,
   },
-  titleRow: {
+  scrollContent: {
+    alignItems: 'center',
+    paddingHorizontal: PADDING,
+  },
+  mainWrapper: {
+    width: '100%',
+  },
+
+  /* Header */
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  brandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    gap: 4,
+  },
+  brandText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
+  },
+  brandSparkle: {
+    fontSize: 12,
+    color: '#FDE047',
+  },
+  topTabsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  topTabItem: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  topTabText: {
+    fontSize: 14.5,
+    fontWeight: '500',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  topTabTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  topTabIndicator: {
+    width: 16,
+    height: 2.5,
+    backgroundColor: '#38BDF8',
+    borderRadius: 2,
+    marginTop: 4,
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+  },
+  headerRightCat: {
+    width: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* Slogan */
+  sloganRow: {
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  sloganText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(253, 224, 71, 0.92)',
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(253, 224, 71, 0.4)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+
+  /* Showcase Banner */
+  showcaseBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(22, 28, 52, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(147, 197, 253, 0.22)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+  },
+  bannerLeft: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  bannerTagRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  bannerTagPill: {
+    backgroundColor: 'rgba(245, 158, 11, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.42)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+  },
+  bannerTagText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FCD34D',
+    letterSpacing: 0.3,
+  },
+  bannerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  bannerSubtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  bannerDetailBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(56, 189, 248, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.45)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  bannerDetailBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#38BDF8',
+    letterSpacing: 0.3,
+  },
+  bannerRight: {
+    width: 108,
+    height: 112,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  /* Filter Row */
+  filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.ink,
-    letterSpacing: 0.5,
-  },
-  countBadge: {
-    backgroundColor: '#F3EFE8',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E6DFC8',
-    marginLeft: 'auto',
-  },
-  countText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.moss,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: colors.inkMuted,
-    marginTop: 4,
     marginBottom: 14,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 10,
   },
   filterPill: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#ECE5D8',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   filterPillActive: {
-    backgroundColor: colors.moss,
+    backgroundColor: '#0284C7',
+    borderColor: '#38BDF8',
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
   },
-  filterText: {
-    fontSize: 12,
+  filterPillText: {
+    fontSize: 11.5,
     fontWeight: '600',
-    color: colors.inkMuted,
+    color: '#94A3B8',
   },
-  filterTextActive: {
+  filterPillTextActive: {
     color: '#FFFFFF',
     fontWeight: '700',
   },
-  gridScroll: {
-    flex: 1,
-  },
-  gridContent: {
-    paddingHorizontal: GRID_PADDING,
-    paddingBottom: 40,
-  },
-  gridRow: {
+
+  /* 4-Column Grid */
+  gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: GAP,
+    justifyContent: 'flex-start',
+  },
+  cardWrapper: {
+    marginBottom: 4,
+    borderRadius: 10,
+    overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  cardBorderFrame: {
+    flex: 1,
+    borderRadius: 10,
+    borderWidth: 1.2,
+    borderColor: 'rgba(224, 231, 255, 0.36)',
+    overflow: 'hidden',
+    backgroundColor: '#12172A',
+  },
+  cardHeaderRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    zIndex: 2,
+  },
+  cardCodeBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    borderRadius: 4,
+    paddingHorizontal: 3.5,
+    paddingVertical: 1.5,
+  },
+  cardCodeText: {
+    fontSize: 7.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  rarityBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1.5,
+  },
+  rarityUR: {
+    backgroundColor: '#F43F5E',
+  },
+  raritySSR: {
+    backgroundColor: '#F59E0B',
+  },
+  raritySR: {
+    backgroundColor: '#8B5CF6',
+  },
+  rarityR: {
+    backgroundColor: '#0284C7',
+  },
+  rarityText: {
+    fontSize: 7.5,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
+  },
+  cardTitleBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  cardTitleText: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
 });

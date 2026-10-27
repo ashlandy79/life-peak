@@ -30,7 +30,8 @@ const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 345);
 export default function CardDetailCosmicScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { instanceId } = useLocalSearchParams<{ instanceId: string }>();
+  const { instanceId, from } = useLocalSearchParams<{ instanceId: string; from?: string }>();
+  const isFromAlbum = from === 'album';
 
   const [instance, setInstance] = useState<UserCardInstance | null>(null);
   const [card, setCard] = useState<CardDefinition | null>(null);
@@ -42,15 +43,27 @@ export default function CardDetailCosmicScreen() {
 
   const loadData = useCallback(async () => {
     if (!instanceId) return;
-    const inst = await CollectionRepository.getInstanceById(instanceId);
+    let inst = await CollectionRepository.getInstanceById(instanceId);
+    let cardDef: CardDefinition | null = null;
     if (inst) {
+      cardDef = (await CardRepository.getCardById(inst.cardId)) || null;
+    } else {
+      cardDef = (await CardRepository.getCardById(instanceId)) || null;
+      if (cardDef) {
+        inst = {
+          instanceId: `inst-${cardDef.id}`,
+          cardId: cardDef.id,
+          status: 'COLLECTED',
+          obtainedAt: new Date().toISOString(),
+          unsealedAt: new Date().toISOString(),
+        } as UserCardInstance;
+      }
+    }
+    if (inst && cardDef) {
       setInstance(inst);
-      const c = await CardRepository.getCardById(inst.cardId);
-      if (c) {
-        setCard(c);
-        if (c.tier) {
-          setCurrentTier(c.tier as CardRarityTier);
-        }
+      setCard(cardDef);
+      if (cardDef.tier) {
+        setCurrentTier(cardDef.tier as CardRarityTier);
       }
     }
   }, [instanceId]);
@@ -72,15 +85,17 @@ export default function CardDetailCosmicScreen() {
   const handleSafeBack = useCallback(() => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
-      if (router.canGoBack()) {
+      if (isFromAlbum) {
+        router.replace('/(tabs)/album');
+      } else if (router.canGoBack()) {
         router.back();
       } else {
         router.replace('/(tabs)');
       }
     } catch {
-      router.replace('/(tabs)');
+      router.replace(isFromAlbum ? '/(tabs)/album' : '/(tabs)');
     }
-  }, [router]);
+  }, [router, isFromAlbum]);
 
   const handlePressUnseal = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -127,7 +142,7 @@ export default function CardDetailCosmicScreen() {
     );
   }
 
-  const isSealedState = instance.status === 'SEALED';
+  const isSealedState = isFromAlbum ? false : instance.status === 'SEALED';
 
   return (
     <View style={styles.screen}>
@@ -172,7 +187,7 @@ export default function CardDetailCosmicScreen() {
           <View style={styles.unlockGroup}>
             <View style={styles.unlockTextWrapper}>
               <Text style={styles.unlockText}>
-                {isSealedState ? '封印中的奇遇' : '已解封纪念'}
+                {isFromAlbum ? '卡片珍藏鉴赏' : isSealedState ? '封印中的奇遇' : '已解封纪念'}
               </Text>
               <div className="unlock-underline" />
             </View>
@@ -220,8 +235,17 @@ export default function CardDetailCosmicScreen() {
           { paddingBottom: Math.max(insets.bottom, 28) + 20 },
         ]}
       >
-        {/* 主按钮：封印态显示「✦ 解封卡片」，已解封态显示「★ 卡片已解封」 */}
-        {isSealedState ? (
+        {/* 主按钮：来自卡册时展示「翻看卡背 ↺」，不显示收藏到卡册 */}
+        {isFromAlbum ? (
+          <ShinyPillButton
+            label="翻看卡背 ↺"
+            onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              tcgCardRef.current?.flipCard();
+            }}
+            style={styles.mainActionBtn}
+          />
+        ) : isSealedState ? (
           <ShinyPillButton
             label="✦ 解封卡片"
             onPress={handlePressUnseal}
@@ -235,13 +259,13 @@ export default function CardDetailCosmicScreen() {
           />
         )}
 
-        {/* 次级链接：返回首页 */}
+        {/* 次级链接 */}
         <TouchableOpacity
           onPress={handleSafeBack}
           activeOpacity={0.75}
           style={styles.albumLinkBtn}
         >
-          <Text style={styles.albumLinkText}>返回首页</Text>
+          <Text style={styles.albumLinkText}>{isFromAlbum ? '← 返回卡册' : '返回首页'}</Text>
           <div className="album-link-underline" />
         </TouchableOpacity>
 
