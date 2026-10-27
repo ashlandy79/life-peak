@@ -591,6 +591,8 @@ export interface ExtendedTcgCardHandle extends TcgCardHandle {
     kind: 'character' | 'background' | 'ui' | 'structure' | 'back',
     src: string
   ): Promise<void>;
+  flipToFront(durationMs?: number, onComplete?: () => void): void;
+  setRotation(x: number, y: number): void;
 }
 
 export async function mountTcgHoloCard(
@@ -868,12 +870,19 @@ export async function mountTcgHoloCard(
     gl!.drawArrays(gl!.TRIANGLES, 0, 6);
   }
 
+  const initRotationY = (initialParams as any)?.initialRotationY !== undefined
+    ? (initialParams as any).initialRotationY
+    : -10;
+  const initBaseY = (initialParams as any)?.initialRotationY !== undefined
+    ? (initialParams as any).initialRotationY
+    : 0;
+
   const m = {
-    x: -4,
-    y: -10,
-    tx: -4,
-    ty: -10,
-    base: 0,
+    x: initRotationY === 180 ? 0 : -4,
+    y: initRotationY,
+    tx: initRotationY === 180 ? 0 : -4,
+    ty: initRotationY,
+    base: initBaseY,
     down: false,
     px: 0,
     py: 0,
@@ -1085,6 +1094,46 @@ export async function mountTcgHoloCard(
     },
     flipCard() {
       flip();
+    },
+    flipToFront(durationMs = 850, onComplete?: () => void) {
+      const startY = m.y;
+      const targetY = 0;
+      const startTime = performance.now();
+      m.base = 0;
+      m.tx = 0;
+      m.ty = 0;
+
+      let isDone = false;
+      function step(now: number) {
+        if (isDone || disposed) return;
+        const elapsed = now - startTime;
+        const progress = Math.min(1.0, elapsed / durationMs);
+        const t = progress;
+        const eased = 1 - Math.pow(1 - t, 3);
+        m.y = startY + (targetY - startY) * eased;
+        m.ty = m.y;
+        dirty = true;
+
+        if (progress < 1.0) {
+          requestAnimationFrame(step);
+        } else {
+          isDone = true;
+          m.y = 0;
+          m.ty = 0;
+          m.base = 0;
+          dirty = true;
+          onFlipChange?.(false);
+          onComplete?.();
+        }
+      }
+      requestAnimationFrame(step);
+    },
+    setRotation(x: number, y: number) {
+      m.tx = x;
+      m.ty = y;
+      m.x = x;
+      m.y = y;
+      dirty = true;
     },
     setFlipped(flipped: boolean) {
       const currentBack = Math.abs(Math.round(m.base / 180) % 2) === 1;

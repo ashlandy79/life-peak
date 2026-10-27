@@ -23,6 +23,7 @@ import type { CardDefinition } from '../types/card';
 export interface TcgHoloCardRef {
   getHandle: () => ExtendedTcgCardHandle | null;
   flipCard: () => void;
+  flipToFront: (durationMs?: number, onComplete?: () => void) => void;
   recenter: () => void;
   unsealCard: () => Promise<void>;
   resealCard: () => Promise<void>;
@@ -33,6 +34,7 @@ export interface TcgHoloCardProps {
   card?: CardDefinition | null;
   isSealed?: boolean;
   tier?: CardRarityTier;
+  initialRotationY?: number;
   customAssets?: Partial<TcgCardAssets>;
   customMeta?: Partial<LifeSealCardMeta>;
   initialParameters?: Partial<TcgHoloParameters>;
@@ -64,6 +66,7 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
       card,
       isSealed = false,
       tier = 'rare',
+      initialRotationY = 0,
       customAssets,
       customMeta,
       initialParameters,
@@ -118,6 +121,9 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
       getHandle: () => handleRef.current,
       flipCard: () => {
         handleRef.current?.flipCard();
+      },
+      flipToFront: (durationMs?: number, onComplete?: () => void) => {
+        handleRef.current?.flipToFront(durationMs, onComplete);
       },
       recenter: () => {
         handleRef.current?.recenter();
@@ -212,7 +218,7 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
           container.style.alignItems = 'center';
           hostRef.current?.append(container);
 
-          const initialParams: Partial<TcgHoloParameters> = {
+          const initialParams: any = {
             ...DEFAULT_TCG_PARAMETERS,
             rimColor: tierSpec.rimColor,
             structureLightMode: tierSpec.structureLightMode,
@@ -220,6 +226,7 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
             frostedBlur: isSealed ? 0.65 : 0.0,
             depth: isSealed ? 0.0 : 0.85,
             power: isSealed ? 0.0 : 1.05,
+            initialRotationY,
             ...initialParameters,
           };
 
@@ -323,9 +330,16 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
     return (
       <View style={[styles.wrapper, style]}>
         {loading && (
-          <View style={styles.loadingOverlay}>
+          <View
+            style={[
+              styles.loadingOverlay,
+              initialRotationY === 180 && { backgroundColor: 'transparent' },
+            ]}
+          >
             <ActivityIndicator size="small" color="#67E8F9" />
-            <Text style={styles.loadingText}>加载 3D 全息卡片中...</Text>
+            {initialRotationY !== 180 && (
+              <Text style={styles.loadingText}>加载 3D 全息卡片中...</Text>
+            )}
           </View>
         )}
         <div ref={hostRef} style={{ width: '100%', display: 'flex', justifyContent: 'center' }} />

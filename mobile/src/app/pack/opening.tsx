@@ -21,9 +21,10 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { DrawService, DrawResult } from '../../services/DrawService';
 import { DoodleSparkle, DoodleCat, DoodleStar } from '../../components/DoodleDeco';
-import { TcgHoloCard } from '../../components/TcgHoloCard';
+import { TcgHoloCard, TcgHoloCardRef } from '../../components/TcgHoloCard';
 import { ThreePackStage } from '../../components/ThreePackStage';
 import { CosmicParticles } from '../../components/cosmic/CosmicParticles';
+import { CosmicBackdropOverlay } from '../../components/cosmic/CosmicBackdropOverlay';
 import { PrismBeam } from '../../components/cosmic/PrismBeam';
 import { GroundEnergyRing } from '../../components/cosmic/GroundEnergyRing';
 import { ShinyPillButton } from '../../components/cosmic/ShinyPillButton';
@@ -37,9 +38,11 @@ export default function PackOpeningScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [tearProgress, setTearProgress] = useState<number>(0);
-  const [stage, setStage] = useState<'SEALED' | 'SEALED_SHOWN'>('SEALED');
+  const [stage, setStage] = useState<'SEALED' | 'CARD_BACK' | 'REVEALED'>('SEALED');
+  const [isFlipping, setIsFlipping] = useState<boolean>(false);
   const [drawResult, setDrawResult] = useState<DrawResult | null>(null);
   const lastReportedProgressRef = useRef<number>(0);
+  const tcgCardRef = useRef<TcgHoloCardRef | null>(null);
 
   const handleTearProgress = useCallback((p: number) => {
     const rounded = Math.round(p * 10) / 10;
@@ -124,25 +127,35 @@ export default function PackOpeningScreen() {
     controlsTranslateY.value = 24;
     lastReportedProgressRef.current = 0;
     setTearProgress(0);
+    setIsFlipping(false);
     setStage('SEALED');
   };
 
-  // Three.js 物理撕开 + 破袋升起 + 360° 翻转完成触发回调
+  // Three.js 物理撕开完成：进入图2（卡片背面居中），紧接着平滑3D翻转至图3（卡片正面）
   const handleThreeTearComplete = useCallback(() => {
-    setStage('SEALED_SHOWN');
+    // 阶段1：展示图2（卡背居中，正在撕裂卡包 100%）
+    setStage('CARD_BACK');
     triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // 卡片平滑升起并悬浮
-    cardOpacity.value = withTiming(1, { duration: 400 });
-    cardScale.value = withSpring(1.0, { damping: 14, stiffness: 80 });
-    cardTranslateY.value = withSpring(0, { damping: 15, stiffness: 75 });
+    cardOpacity.value = withTiming(1, { duration: 320 });
+    cardScale.value = withSpring(1.0, { damping: 14, stiffness: 85 });
+    cardTranslateY.value = withSpring(0, { damping: 15, stiffness: 80 });
 
-    // 随后底部操作控件与提示浮现
+    // 阶段2：稍作停顿感知图2真实卡背，触发 180° -> 0° 3D 顺畅翻转并带扫光特效
     setTimeout(() => {
-      runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Light);
-      controlsOpacity.value = withTiming(1, { duration: 480, easing: Easing.out(Easing.cubic) });
-      controlsTranslateY.value = withSpring(0, { damping: 14 });
-    }, 300);
+      setIsFlipping(true);
+      runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Medium);
+
+      tcgCardRef.current?.flipToFront(850, () => {
+        setIsFlipping(false);
+        setStage('REVEALED');
+        runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Light);
+
+        // 阶段3：翻转完成，揭晓页底部操作按钮和能量环绽放
+        controlsOpacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
+        controlsTranslateY.value = withSpring(0, { damping: 14 });
+      });
+    }, 380);
   }, [triggerHaptic]);
 
   const animatedCardContainerStyle = useAnimatedStyle(() => ({
@@ -158,7 +171,7 @@ export default function PackOpeningScreen() {
     transform: [{ translateY: controlsTranslateY.value }],
   }));
 
-  // 格式化当前日期为设计图样式（例：9月20日 星期日）
+  // 格式化当前日期为设计图样式（例：10月27日 星期二）
   const getFormattedDate = () => {
     const now = new Date();
     const month = now.getMonth() + 1;
@@ -177,20 +190,19 @@ export default function PackOpeningScreen() {
         contentFit="cover"
       />
 
-      {/* 2. 宇宙揭晓页：宽幅对角线虹彩棱镜光束 (Prism Beam) */}
-      {stage === 'SEALED_SHOWN' && <PrismBeam />}
+      {/* 2. 宇宙全景：宽幅对角线虹彩棱镜光束 (图1至图3全程连贯常驻) */}
+      <PrismBeam />
 
-      {/* 3. 星尘粒子：撕包阶段微弱神秘点缀，揭晓阶段绚丽绽放 */}
-      {stage === 'SEALED' ? (
-        <CosmicParticles faint={true} particleCount={24} />
-      ) : (
-        <CosmicParticles particleCount={55} />
-      )}
+      {/* 3. 宇宙全景：漂浮星尘粒子与四角菱形星芒 (图1至图3全程连贯常驻) */}
+      <CosmicParticles particleCount={stage === 'REVEALED' ? 55 : 42} />
 
-      {/* 4. 顶部状态栏与品牌区 (1:1 复刻设计稿) */}
+      {/* 4. 宇宙全景：深空天体轨道环与光束纹理 (图1至图3全程连贯常驻) */}
+      <CosmicBackdropOverlay opacity={stage === 'SEALED' ? 0.9 : 1.0} />
+
+      {/* 5. 顶部状态栏与品牌区 */}
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
-        {stage !== 'SEALED_SHOWN' ? (
-          // 撕包阶段：安全返回按钮
+        {stage !== 'REVEALED' ? (
+          // 撕包阶段与卡背展示阶段（图1 & 图2）：安全返回按钮
           <View style={styles.tearTopBar}>
             <TouchableOpacity
               style={styles.closeButton}
@@ -201,7 +213,7 @@ export default function PackOpeningScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          // 揭晓阶段：1:1 复刻手绘品牌气泡与解锁提示
+          // 揭晓阶段（图3）：1:1 复刻手绘品牌气泡与解锁提示
           <View style={styles.revealTopBar}>
             {/* 左侧：LIFE PACK 手绘气泡 + 日期 */}
             <View style={styles.brandDateGroup}>
@@ -230,13 +242,15 @@ export default function PackOpeningScreen() {
         )}
       </View>
 
-      {/* 5. 撕包中提示 Pill */}
-      {stage === 'SEALED' && (
+      {/* 6. 撕包中提示 Pill (图1 & 图2 阶段) */}
+      {stage !== 'REVEALED' && (
         <View style={styles.instructionContainer}>
           <View style={styles.instructionPill}>
             <DoodleSparkle size={16} color="#67E8F9" />
             <Text style={styles.instructionText}>
-              {tearProgress > 0
+              {stage === 'CARD_BACK' || tearProgress >= 1
+                ? '正在撕裂卡包 100%'
+                : tearProgress > 0
                 ? `正在撕裂卡包 ${Math.round(tearProgress * 100)}%`
                 : '向右滑动卡包即可拆包 ▶'}
             </Text>
@@ -244,9 +258,9 @@ export default function PackOpeningScreen() {
         </View>
       )}
 
-      {/* 6. 中央舞台区域 */}
+      {/* 7. 中央舞台区域 */}
       <View style={styles.stageArea}>
-        {/* 阶段 A：物理卡包撕开舞台 */}
+        {/* 阶段 A：物理卡包撕开舞台（图1） */}
         {stage === 'SEALED' && (
           <View style={styles.threeStageWrapper}>
             <ThreePackStage
@@ -258,36 +272,57 @@ export default function PackOpeningScreen() {
           </View>
         )}
 
-        {/* 阶段 B：1:1 宇宙揭晓页卡片展示（悬浮 3D 全息卡片 + 地面能量光环） */}
-        {stage === 'SEALED_SHOWN' && (
+        {/* 阶段 B：真实卡背升起（图2）并在中央平滑 3D 翻转为卡片正面（图3） */}
+        {stage !== 'SEALED' && (
           <Animated.View style={[styles.cosmicCardStage, animatedCardContainerStyle]}>
-            {/* 卡片正下方地面能量光环 */}
-            <View style={styles.groundRingWrapper}>
-              <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
-            </View>
+            {/* 卡片正下方地面能量光环（翻至正面后绚丽点亮） */}
+            {stage === 'REVEALED' && (
+              <View style={styles.groundRingWrapper}>
+                <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
+              </View>
+            )}
 
-            {/* 3D 全息卡片本体（默认珍珠蓝，封印态，支持 3D 旋转与翻看） */}
+            {/* 3D 全息卡片本体（初始以背面 180° 居中，随后无缝翻转至正面 0°） */}
             <View style={styles.holoCardContainer}>
               <TcgHoloCard
+                ref={tcgCardRef}
                 card={drawResult?.card}
                 isSealed={true}
+                initialRotationY={180}
                 tier={drawResult?.card?.tier || 'rare'}
                 cardWidth={CARD_WIDTH}
               />
+              {/* 翻转过程中的高光掠影扫光特效 */}
+              {isFlipping && <div className="card-flip-sheen" />}
             </View>
 
-            {/* 卡片下方全息提示语 */}
-            <View style={styles.holoHintRow}>
-              <Text style={styles.holoHintSparkle}>✧</Text>
-              <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
-              <Text style={styles.holoHintSparkle}>✧</Text>
-            </View>
+            {/* 卡片下方全息提示语（翻至正面后浮现） */}
+            {stage === 'REVEALED' && (
+              <View style={styles.holoHintRow}>
+                <Text style={styles.holoHintSparkle}>✧</Text>
+                <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
+                <Text style={styles.holoHintSparkle}>✧</Text>
+              </View>
+            )}
           </Animated.View>
         )}
       </View>
 
-      {/* 7. 底部操作与装饰区域 (1:1 复刻设计稿) */}
-      {stage === 'SEALED_SHOWN' && (
+      {/* 8. 底部区域：图1 & 图2 显示经典手写寄语与涂鸦，图3 显示操作按钮 */}
+      {stage !== 'REVEALED' ? (
+        <View style={styles.preRevealFooter}>
+          <Text style={styles.preRevealQuoteLine1}>今天也没啥事。</Text>
+          <View style={styles.preRevealQuoteRow}>
+            <Text style={styles.preRevealQuoteLine2}>那就抽一张吧。</Text>
+            <Text style={styles.quoteSparkle}>✧</Text>
+            <View style={styles.preRevealLine} />
+          </View>
+          <View style={styles.preRevealCatCorner}>
+            <DoodleCat size={32} color="#CBD5E1" />
+            <Text style={styles.lifePackTinyText}>LIFE PACK</Text>
+          </View>
+        </View>
+      ) : (
         <Animated.View
           style={[
             styles.bottomRevealArea,
@@ -357,6 +392,40 @@ export default function PackOpeningScreen() {
           background: rgba(255, 255, 255, 0.7);
           margin-top: 4px;
           border-radius: 1px;
+        }
+
+        .card-flip-sheen {
+          position: absolute;
+          inset: -15%;
+          pointer-events: none;
+          background: linear-gradient(
+            115deg,
+            transparent 25%,
+            rgba(255, 255, 255, 0.65) 48%,
+            rgba(103, 232, 249, 0.85) 52%,
+            transparent 75%
+          );
+          filter: blur(8px);
+          mix-blend-mode: screen;
+          animation: flip-sheen-sweep 0.85s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          z-index: 50;
+        }
+
+        @keyframes flip-sheen-sweep {
+          0% {
+            transform: translateX(-120%) skewX(-20deg);
+            opacity: 0;
+          }
+          35% {
+            opacity: 0.95;
+          }
+          70% {
+            opacity: 0.75;
+          }
+          100% {
+            transform: translateX(140%) skewX(-20deg);
+            opacity: 0;
+          }
         }
       `}</style>
     </View>
@@ -510,6 +579,7 @@ const styles = StyleSheet.create({
   holoCardContainer: {
     zIndex: 10,
     marginBottom: 4,
+    position: 'relative',
   },
   holoHintRow: {
     flexDirection: 'row',
@@ -534,6 +604,62 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(103, 232, 249, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
+  },
+  preRevealFooter: {
+    position: 'absolute',
+    bottom: 28,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 40,
+    pointerEvents: 'none',
+  },
+  preRevealQuoteLine1: {
+    color: '#FAF7F2',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+    textAlign: 'center',
+  },
+  preRevealQuoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    position: 'relative',
+  },
+  preRevealQuoteLine2: {
+    color: '#FAF7F2',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  preRevealLine: {
+    position: 'absolute',
+    bottom: -3,
+    left: 0,
+    right: 18,
+    height: 1.2,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+  },
+  preRevealCatCorner: {
+    position: 'absolute',
+    right: 0,
+    bottom: -4,
+    alignItems: 'center',
+  },
+  lifePackTinyText: {
+    color: '#CBD5E1',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
   bottomRevealArea: {
     alignItems: 'center',
