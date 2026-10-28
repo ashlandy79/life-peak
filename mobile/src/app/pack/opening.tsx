@@ -33,6 +33,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PACK_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
 const PACK_HEIGHT = Math.round(PACK_WIDTH * (924 / 565));
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 345);
+const CARD_HEIGHT = Math.round(CARD_WIDTH * 1.4);
+const SLOT_WIDTH = Math.max(PACK_WIDTH, CARD_WIDTH);
+const SLOT_HEIGHT = Math.max(PACK_HEIGHT, CARD_HEIGHT);
 
 export default function PackOpeningScreen() {
   const router = useRouter();
@@ -208,7 +211,7 @@ export default function PackOpeningScreen() {
       {/* 4. 宇宙全景：深空天体轨道环与光束纹理 (图1至图3全程连贯常驻) */}
       <CosmicBackdropOverlay opacity={stage === 'SEALED' ? 0.9 : 1.0} />
 
-      {/* 5. 顶部状态栏与品牌区 */}
+      {/* 5. 顶部状态栏与品牌区（全阶段固定高度基准） */}
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 14) }]}>
         {stage !== 'REVEALED' ? (
           // 撕包阶段与卡背展示阶段（图1 & 图2）：安全返回按钮
@@ -251,9 +254,14 @@ export default function PackOpeningScreen() {
         )}
       </View>
 
-      {/* 6. 撕包中提示 Pill (图1 & 图2 阶段) */}
+      {/* 6. 撕包中提示 Pill (图1 & 图2 阶段：绝对浮动定位，零占用流式高度，保证舞台几何中心全程不动) */}
       {stage !== 'REVEALED' && (
-        <View style={styles.instructionContainer}>
+        <View
+          style={[
+            styles.instructionContainer,
+            { top: Math.max(insets.top, 14) + 54 },
+          ]}
+        >
           <View style={styles.instructionPill}>
             <DoodleSparkle size={16} color="#67E8F9" />
             <Text style={styles.instructionText}>
@@ -267,66 +275,68 @@ export default function PackOpeningScreen() {
         </View>
       )}
 
-      {/* 7. 中央舞台区域 */}
+      {/* 7. 中央舞台区域：卡包与卡片共享严格同一锚点容器 cardAndPackSlot，消除任何位置漂移 */}
       <View style={styles.stageArea}>
-        {/* 常驻中央全息卡片舞台：提前预热挂载，拆包前 opacity: 0 隐形，拆开瞬间平滑淡入 */}
-        <Animated.View
-          style={[
-            styles.cosmicCardStage,
-            animatedCardContainerStyle,
-          ]}
-          pointerEvents={stage === 'SEALED' ? 'none' : 'auto'}
-        >
-          {/* 卡片正下方地面能量法阵：全程旋转点亮 */}
-          <View style={styles.groundRingWrapper}>
-            <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
-          </View>
+        <View style={styles.cardAndPackSlot}>
+          {/* 常驻中央全息卡片舞台：提前预热挂载，拆包前 opacity: 0 隐形，拆开瞬间平滑淡入 */}
+          <Animated.View
+            style={[
+              styles.cosmicCardStage,
+              animatedCardContainerStyle,
+            ]}
+            pointerEvents={stage === 'SEALED' ? 'none' : 'auto'}
+          >
+            {/* 卡片正下方地面能量法阵：全程旋转点亮 */}
+            <View style={styles.groundRingWrapper}>
+              <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
+            </View>
 
-          {/* 3D 全息卡片本体（初始以背面 180° 居中，随后无缝翻转至正面 0°） */}
-          <View style={styles.holoCardContainer}>
-            <TcgHoloCard
-              ref={tcgCardRef}
-              card={drawResult?.card}
-              isSealed={true}
-              initialRotationY={180}
-              tier={drawResult?.card?.tier || 'rare'}
-              cardWidth={CARD_WIDTH}
-            />
-            {/* 翻转过程中的高光掠影扫光特效 */}
-            {isFlipping && <div className="card-flip-sheen" />}
-          </View>
+            {/* 3D 全息卡片本体（初始以背面 180° 居中，随后无缝翻转至正面 0°） */}
+            <View style={styles.holoCardContainer}>
+              <TcgHoloCard
+                ref={tcgCardRef}
+                card={drawResult?.card}
+                isSealed={true}
+                initialRotationY={180}
+                tier={drawResult?.card?.tier || 'rare'}
+                cardWidth={CARD_WIDTH}
+              />
+              {/* 翻转过程中的高光掠影扫光特效 */}
+              {isFlipping && <div className="card-flip-sheen" />}
+            </View>
 
-          {/* 卡片下方全息提示语（翻至正面后浮现） */}
-          {stage === 'REVEALED' && (
-            <View style={styles.holoHintRow}>
-              <Text style={styles.holoHintSparkle}>✧</Text>
-              <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
-              <Text style={styles.holoHintSparkle}>✧</Text>
+            {/* 卡片下方全息提示语（绝对定位挂载，完全不挤压卡片流式中心） */}
+            {stage === 'REVEALED' && (
+              <View style={styles.holoHintRow}>
+                <Text style={styles.holoHintSparkle}>✧</Text>
+                <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
+                <Text style={styles.holoHintSparkle}>✧</Text>
+              </View>
+            )}
+          </Animated.View>
+
+          {/* 阶段 A：物理卡包撕开舞台（图1），覆盖在卡片正前方同一中心位置 */}
+          {stage === 'SEALED' && (
+            <View
+              style={styles.threeStageWrapper}
+              pointerEvents={tearProgress >= 1 ? 'none' : 'auto'}
+            >
+              <ThreePackStage
+                width={PACK_WIDTH}
+                height={PACK_HEIGHT}
+                onTearProgress={handleTearProgress}
+                onTearComplete={handleThreeTearComplete}
+              />
             </View>
           )}
-        </Animated.View>
-
-        {/* 阶段 A：物理卡包撕开舞台（图1），覆盖在卡片正前方 */}
-        {stage === 'SEALED' && (
-          <View
-            style={[styles.threeStageWrapper, { position: 'absolute' }]}
-            pointerEvents={tearProgress >= 1 ? 'none' : 'auto'}
-          >
-            <ThreePackStage
-              width={PACK_WIDTH}
-              height={PACK_HEIGHT}
-              onTearProgress={handleTearProgress}
-              onTearComplete={handleThreeTearComplete}
-            />
-          </View>
-        )}
+        </View>
       </View>
 
-      {/* 8. 统一高度与垂直基准的底部区域：让卡包与卡片垂直中心在同一直线上，彻底根除位置突跳 */}
+      {/* 8. 统一高度与垂直基准的底部区域：完全固定尺寸，卡包与卡片垂直中心全程恒定不动 */}
       <View
         style={[
           styles.bottomFixedContainer,
-          { paddingBottom: Math.max(insets.bottom, 24) + 12 },
+          { marginBottom: Math.max(insets.bottom, 16) },
         ]}
       >
         {stage !== 'REVEALED' ? (
@@ -455,18 +465,21 @@ const styles = StyleSheet.create({
   },
   topBar: {
     paddingHorizontal: 20,
+    height: 56,
+    justifyContent: 'center',
     zIndex: 50,
   },
   tearTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
+    height: 56,
   },
   revealTopBar: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 4,
+    height: 56,
   },
   brandDateGroup: {
     flexDirection: 'column',
@@ -544,10 +557,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   instructionContainer: {
+    position: 'absolute',
     alignItems: 'center',
-    marginTop: 10,
     zIndex: 40,
-    minHeight: 38,
+    alignSelf: 'center',
   },
   instructionPill: {
     flexDirection: 'row',
@@ -572,7 +585,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
+  cardAndPackSlot: {
+    width: SLOT_WIDTH,
+    height: SLOT_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
   threeStageWrapper: {
+    position: 'absolute',
     width: PACK_WIDTH,
     height: PACK_HEIGHT,
     alignItems: 'center',
@@ -580,28 +601,29 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   cosmicCardStage: {
-    width: '100%',
+    position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
     zIndex: 35,
   },
   groundRingWrapper: {
     position: 'absolute',
-    bottom: 22,
+    bottom: -16,
     zIndex: 1,
   },
   holoCardContainer: {
     zIndex: 10,
-    marginBottom: 4,
     position: 'relative',
   },
   holoHintRow: {
+    position: 'absolute',
+    bottom: -32,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 10,
     zIndex: 20,
   },
   holoHintSparkle: {
@@ -622,7 +644,9 @@ const styles = StyleSheet.create({
   },
   bottomFixedContainer: {
     width: '100%',
-    minHeight: 124,
+    height: 140,
+    minHeight: 140,
+    maxHeight: 140,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -632,7 +656,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
     paddingHorizontal: 20,
     position: 'relative',
   },
@@ -683,12 +706,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   bottomRevealArea: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 45,
     paddingHorizontal: 20,
     position: 'relative',
-    minHeight: 140,
   },
   mainActionBtn: {
     marginBottom: 14,

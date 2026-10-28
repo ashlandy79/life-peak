@@ -42,7 +42,13 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
         BadgeService.setAlbumBadge(false);
       }, 50);
     }
-    onSelectTab(key, route);
+    if (typeof onSelectTab === 'function') {
+      try {
+        onSelectTab(key, route);
+      } catch (err) {
+        console.warn('[BottomTabBar] onSelectTab error:', err);
+      }
+    }
   };
 
   const renderIcon = (key: string, active: boolean) => {
