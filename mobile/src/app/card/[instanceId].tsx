@@ -22,6 +22,9 @@ import { CosmicParticles } from '../../components/cosmic/CosmicParticles';
 import { PrismBeam } from '../../components/cosmic/PrismBeam';
 import { GroundEnergyRing } from '../../components/cosmic/GroundEnergyRing';
 import { ShinyPillButton } from '../../components/cosmic/ShinyPillButton';
+import { renderPolaroidTexture } from '../../utils/renderPolaroidTexture';
+import { PolaroidEditModal } from '../../components/PolaroidEditModal';
+import { SharePosterModal } from '../../components/SharePosterModal';
 import type { CardRarityTier } from '../../core/tcgTypes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -38,6 +41,15 @@ export default function CardDetailCosmicScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [triggerSlashBurst, setTriggerSlashBurst] = useState(false);
   const [currentTier, setCurrentTier] = useState<CardRarityTier>('rare');
+  const [isPolaroidMode, setIsPolaroidMode] = useState(false);
+  const [polaroidEffectActive, setPolaroidEffectActive] = useState(false);
+  const [userNote, setUserNote] = useState('在星空下散步，偶遇了一只亲人的猫咪。生活的小确幸往往藏在不期而遇的瞬间。');
+  const [recordDate, setRecordDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+  });
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
 
   const tcgCardRef = useRef<TcgHoloCardRef | null>(null);
 
@@ -121,6 +133,63 @@ export default function CardDetailCosmicScreen() {
       const updated = await CollectionRepository.unsealInstance(instanceId);
       if (updated) {
         setInstance({ ...updated });
+      }
+    }
+  };
+
+  const handleTogglePolaroid = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const nextMode = !isPolaroidMode;
+    setIsPolaroidMode(nextMode);
+
+    // 触发流光扫过视觉特效
+    setPolaroidEffectActive(true);
+    setTimeout(() => {
+      setPolaroidEffectActive(false);
+    }, 850);
+
+    if (nextMode) {
+      // 动态合成拍立得高精卡背贴图
+      const photo = (card as any)?.characterImage || card?.previewImage || '/forest_bg.jpg';
+      const texture = await renderPolaroidTexture({
+        photoUrl: typeof photo === 'string' ? photo : '/forest_bg.jpg',
+        cardTitle: card?.title || '生活奇遇',
+        dateText: recordDate,
+        noteText: userNote,
+        sealText: '✦ 奇遇发生 ✦',
+      });
+      if (texture && tcgCardRef.current) {
+        await tcgCardRef.current.updateBackTexture(texture);
+        // 如果当前是正面，优雅翻转至拍立得卡背
+        if (!tcgCardRef.current.isBackFacing()) {
+          tcgCardRef.current.flipCard();
+        }
+      }
+    } else {
+      // 恢复默认经典卡背衬底纹理
+      if (tcgCardRef.current) {
+        const defaultBack = (card as any)?.backLiningImage || '/back.png';
+        await tcgCardRef.current.updateBackTexture(defaultBack);
+      }
+    }
+  };
+
+  const handleSavePolaroid = async (newNote: string, newDate: string) => {
+    setUserNote(newNote);
+    setRecordDate(newDate);
+    setEditModalVisible(false);
+
+    if (isPolaroidMode && tcgCardRef.current) {
+      const photo = (card as any)?.characterImage || card?.previewImage || '/forest_bg.jpg';
+      const texture = await renderPolaroidTexture({
+        photoUrl: typeof photo === 'string' ? photo : '/forest_bg.jpg',
+        cardTitle: card?.title || '生活奇遇',
+        dateText: newDate,
+        noteText: newNote,
+        sealText: '✦ 奇遇发生 ✦',
+      });
+      if (texture) {
+        await tcgCardRef.current.updateBackTexture(texture);
       }
     }
   };
@@ -217,12 +286,64 @@ export default function CardDetailCosmicScreen() {
               tier={currentTier}
               cardWidth={CARD_WIDTH}
             />
+            {/* 拍立得模式切换流光扫过特效 */}
+            {polaroidEffectActive && <div className="polaroid-sparkle-sweep" />}
+          </View>
+
+          {/* 悬浮多功能操控栏：眼睛按钮(拍立得卡背切换) + 随笔编辑 + 分享海报 */}
+          <View style={styles.cardFloatingToolbar}>
+            <TouchableOpacity
+              style={[
+                styles.floatingPillBtn,
+                isPolaroidMode && styles.floatingPillBtnActive,
+              ]}
+              onPress={handleTogglePolaroid}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.floatingPillIcon}>👁️</Text>
+              <Text
+                style={[
+                  styles.floatingPillLabel,
+                  isPolaroidMode && styles.floatingPillLabelActive,
+                ]}
+              >
+                {isPolaroidMode ? '拍立得背面' : '随手记卡背'}
+              </Text>
+            </TouchableOpacity>
+
+            {isPolaroidMode && (
+              <TouchableOpacity
+                style={styles.floatingPillBtn}
+                onPress={() => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                  setEditModalVisible(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.floatingPillIcon}>✏️</Text>
+                <Text style={styles.floatingPillLabel}>编辑随笔</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={styles.floatingPillBtn}
+              onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                setShareModalVisible(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.floatingPillIcon}>✦</Text>
+              <Text style={styles.floatingPillLabel}>生成海报</Text>
+            </TouchableOpacity>
           </View>
 
           {/* 卡片下方全息提示语 */}
           <View style={styles.holoHintRow}>
             <Text style={styles.holoHintSparkle}>✧</Text>
-            <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
+            <Text style={styles.holoHintText}>
+              {isPolaroidMode ? '轻触或翻转查看拍立得时光卡背' : '轻触卡片查看全息效果'}
+            </Text>
             <Text style={styles.holoHintSparkle}>✧</Text>
           </View>
         </View>
@@ -302,6 +423,26 @@ export default function CardDetailCosmicScreen() {
         onComplete={handleSlashBurstComplete}
       />
 
+      {/* 9. 拍立得随笔与日期编辑弹窗 */}
+      <PolaroidEditModal
+        visible={editModalVisible}
+        initialNote={userNote}
+        initialDate={recordDate}
+        onSave={handleSavePolaroid}
+        onClose={() => setEditModalVisible(false)}
+      />
+
+      {/* 10. 精致分享海报生成与导出弹窗 */}
+      {card && (
+        <SharePosterModal
+          visible={shareModalVisible}
+          card={card}
+          userNote={userNote}
+          recordDate={recordDate}
+          onClose={() => setShareModalVisible(false)}
+        />
+      )}
+
       {/* 页面全局样式补充 */}
       <style>{`
         .brand-bubble-sparkles {
@@ -326,6 +467,23 @@ export default function CardDetailCosmicScreen() {
           background: rgba(255, 255, 255, 0.7);
           margin-top: 4px;
           border-radius: 1px;
+        }
+
+        .polaroid-sparkle-sweep {
+          position: absolute;
+          inset: -4px;
+          pointer-events: none;
+          background: linear-gradient(135deg, rgba(253, 224, 71, 0) 0%, rgba(253, 224, 71, 0.5) 45%, rgba(103, 232, 249, 0.6) 55%, rgba(253, 224, 71, 0) 100%);
+          filter: blur(10px);
+          animation: sweepAnim 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          z-index: 50;
+          border-radius: 20px;
+        }
+
+        @keyframes sweepAnim {
+          0% { transform: translateY(-100%) rotate(15deg); opacity: 0; }
+          30% { opacity: 1; }
+          100% { transform: translateY(120%) rotate(15deg); opacity: 0; }
         }
       `}</style>
     </View>
@@ -459,6 +617,45 @@ const styles = StyleSheet.create({
   holoCardContainer: {
     zIndex: 10,
     marginBottom: 4,
+  },
+  cardFloatingToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 10,
+    zIndex: 25,
+  },
+  floatingPillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 5,
+  },
+  floatingPillBtnActive: {
+    backgroundColor: 'rgba(253, 224, 71, 0.15)',
+    borderColor: '#FDE047',
+    shadowColor: '#FDE047',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+  },
+  floatingPillIcon: {
+    fontSize: 13,
+  },
+  floatingPillLabel: {
+    color: '#E2E8F0',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  floatingPillLabelActive: {
+    color: '#FDE047',
   },
   holoHintRow: {
     flexDirection: 'row',

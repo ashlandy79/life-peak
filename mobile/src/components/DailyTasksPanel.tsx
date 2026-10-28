@@ -16,12 +16,14 @@ interface DailyTasksPanelProps {
   tasks: TaskItem[];
   onToggleTask: (taskId: string) => void;
   onPressTaskDetail?: (taskId: string) => void;
+  onPressAllTasks?: () => void;
 }
 
 export const DailyTasksPanel: React.FC<DailyTasksPanelProps> = ({
   tasks,
   onToggleTask,
   onPressTaskDetail,
+  onPressAllTasks,
 }) => {
   const completedCount = tasks.filter((t) => t.status === 'COMPLETED').length;
   const totalCount = tasks.length;
@@ -48,10 +50,21 @@ export const DailyTasksPanel: React.FC<DailyTasksPanelProps> = ({
           <Text style={styles.titleText}>今日小事</Text>
         </View>
 
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {completedCount}/{totalCount}
-          </Text>
+        <View style={styles.headerRightActions}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {completedCount}/{totalCount}
+            </Text>
+          </View>
+          {onPressAllTasks && (
+            <TouchableOpacity
+              style={styles.allTasksBtn}
+              onPress={onPressAllTasks}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.allTasksBtnText}>全部任务 →</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -157,6 +170,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FAF7F2',
     letterSpacing: 0.5,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  allTasksBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+  },
+  allTasksBtnText: {
+    color: '#38BDF8',
+    fontSize: 11.5,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   badge: {
     backgroundColor: 'rgba(255, 255, 255, 0.08)',

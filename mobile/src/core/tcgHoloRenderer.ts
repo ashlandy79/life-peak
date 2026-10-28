@@ -593,6 +593,7 @@ export interface ExtendedTcgCardHandle extends TcgCardHandle {
   ): Promise<void>;
   flipToFront(durationMs?: number, onComplete?: () => void): void;
   setRotation(x: number, y: number): void;
+  isFlipped(): boolean;
 }
 
 export async function mountTcgHoloCard(

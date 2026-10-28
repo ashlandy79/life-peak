@@ -28,6 +28,8 @@ export interface TcgHoloCardRef {
   unsealCard: () => Promise<void>;
   resealCard: () => Promise<void>;
   setTier: (tier: CardRarityTier) => Promise<void>;
+  updateBackTexture: (url: string) => Promise<void>;
+  isBackFacing: () => boolean;
 }
 
 export interface TcgHoloCardProps {
@@ -171,6 +173,13 @@ export const TcgHoloCard = forwardRef<TcgHoloCardRef, TcgHoloCardProps>(
         });
         const newUiUrl = await generateUiTexture(isSealed, newTier);
         await handleRef.current.updateLayerTexture('ui', newUiUrl);
+      },
+      updateBackTexture: async (url: string) => {
+        if (!handleRef.current) return;
+        await handleRef.current.updateLayerTexture('back', url);
+      },
+      isBackFacing: () => {
+        return !!handleRef.current?.isFlipped?.();
       },
     }));
 

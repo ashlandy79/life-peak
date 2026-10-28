@@ -40,7 +40,6 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: '首页' }} />
-      <Tabs.Screen name="tasks" options={{ title: '任务' }} />
       <Tabs.Screen name="album" options={{ title: '卡册' }} />
       <Tabs.Screen name="profile" options={{ title: '我的' }} />
     </Tabs>

@@ -13,7 +13,6 @@ interface TabItem {
 
 export const TABS: TabItem[] = [
   { key: 'home', label: '首页', route: '/' },
-  { key: 'tasks', label: '任务', route: '/tasks' },
   { key: 'album', label: '卡册', route: '/album' },
   { key: 'profile', label: '我的', route: '/profile' },
 ];

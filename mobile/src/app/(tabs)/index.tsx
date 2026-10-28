@@ -170,6 +170,13 @@ export default function HomeScreen() {
           tasks={tasks}
           onToggleTask={handleToggleTask}
           onPressTaskDetail={handlePressTaskDetail}
+          onPressAllTasks={() => {
+            try {
+              router.push('/tasks' as any);
+            } catch {
+              router.navigate('/tasks' as any);
+            }
+          }}
         />
 
         {/* Puzzle Progress Preview Panel */}
