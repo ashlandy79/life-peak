@@ -56,6 +56,8 @@ class CardRepositoryImpl {
       }
     } catch {
       // Backend not yet reachable or offline -> fallback to local cards
+    } finally {
+      this.hasFetchedRemote = true;
     }
     return [...this.cards];
   }

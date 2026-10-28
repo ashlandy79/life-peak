@@ -52,10 +52,10 @@ export default function PackOpeningScreen() {
     }
   }, []);
 
-  // Card emergence & reveal animation
-  const cardOpacity = useSharedValue(1);
-  const cardScale = useSharedValue(1.0);
-  const cardTranslateY = useSharedValue(0);
+  // Card emergence & reveal animation (拆包前强制 0 隐藏，拆开瞬间平滑淡入)
+  const cardOpacity = useSharedValue(0);
+  const cardScale = useSharedValue(0.96);
+  const cardTranslateY = useSharedValue(12);
 
   // Bottom action buttons fade-in
   const controlsOpacity = useSharedValue(0);
@@ -121,8 +121,8 @@ export default function PackOpeningScreen() {
     const newRes = await DrawService.drawFromPack('pack-series-01');
     setDrawResult(newRes);
     cardOpacity.value = 0;
-    cardScale.value = 0.92;
-    cardTranslateY.value = 20;
+    cardScale.value = 0.96;
+    cardTranslateY.value = 12;
     controlsOpacity.value = 0;
     controlsTranslateY.value = 24;
     lastReportedProgressRef.current = 0;
@@ -131,10 +131,15 @@ export default function PackOpeningScreen() {
     setStage('SEALED');
   };
 
-  // Three.js 物理撕开完成：卡包自然滑落淡出，无缝展现正中央已就绪的 3D 卡背，随后平滑翻转至正面
+  // Three.js 物理撕开完成：卡包滑落溶解，无缝露出居中卡背与能量法阵，随后顺畅翻转
   const handleThreeTearComplete = useCallback(() => {
     setStage('CARD_BACK');
     triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+
+    // 卡包消散，卡片以背面平滑淡入浮现 (240ms)
+    cardOpacity.value = withTiming(1, { duration: 240, easing: Easing.out(Easing.quad) });
+    cardScale.value = withSpring(1.0, { damping: 15, stiffness: 90 });
+    cardTranslateY.value = withSpring(0, { damping: 15, stiffness: 85 });
 
     // 稍作停顿 (160ms) 感知真实卡背与法阵，随后立即触发 180° -> 0° 顺畅 3D 翻转
     setTimeout(() => {
@@ -264,8 +269,14 @@ export default function PackOpeningScreen() {
 
       {/* 7. 中央舞台区域 */}
       <View style={styles.stageArea}>
-        {/* 常驻中央全息卡片舞台：提前预热挂载，卡背 180° 正对用户，杜绝重新加载白屏闪烁 */}
-        <Animated.View style={[styles.cosmicCardStage, animatedCardContainerStyle]}>
+        {/* 常驻中央全息卡片舞台：提前预热挂载，拆包前 opacity: 0 隐形，拆开瞬间平滑淡入 */}
+        <Animated.View
+          style={[
+            styles.cosmicCardStage,
+            animatedCardContainerStyle,
+          ]}
+          pointerEvents={stage === 'SEALED' ? 'none' : 'auto'}
+        >
           {/* 卡片正下方地面能量法阵：全程旋转点亮 */}
           <View style={styles.groundRingWrapper}>
             <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
@@ -311,65 +322,66 @@ export default function PackOpeningScreen() {
         )}
       </View>
 
-      {/* 8. 底部区域：图1 & 图2 显示经典手写寄语与涂鸦，图3 显示操作按钮 */}
-      {stage !== 'REVEALED' ? (
-        <View style={styles.preRevealFooter}>
-          <Text style={styles.preRevealQuoteLine1}>今天也没啥事。</Text>
-          <View style={styles.preRevealQuoteRow}>
-            <Text style={styles.preRevealQuoteLine2}>那就抽一张吧。</Text>
-            <Text style={styles.quoteSparkle}>✧</Text>
-            <View style={styles.preRevealLine} />
-          </View>
-          <View style={styles.preRevealCatCorner}>
-            <DoodleCat size={32} color="#CBD5E1" />
-            <Text style={styles.lifePackTinyText}>LIFE PACK</Text>
-          </View>
-        </View>
-      ) : (
-        <Animated.View
-          style={[
-            styles.bottomRevealArea,
-            animatedControlsStyle,
-            { paddingBottom: Math.max(insets.bottom, 28) + 20 },
-          ]}
-        >
-          {/* 主按钮：收下这张卡 -> */}
-          <ShinyPillButton
-            label="收下这张卡 →"
-            onPress={handleAcceptCard}
-            style={styles.mainActionBtn}
-          />
-
-          {/* 次级链接：再抽一张 */}
-          <TouchableOpacity
-            onPress={handleDrawAgain}
-            activeOpacity={0.75}
-            style={styles.albumLinkBtn}
-          >
-            <Text style={styles.albumLinkText}>再抽一张</Text>
-            <div className="album-link-underline" />
-          </TouchableOpacity>
-
-          {/* 底部角落装饰 */}
-          <View style={styles.footerCornerGroup} pointerEvents="none">
-            {/* 左下小猫咪涂鸦 */}
-            <View style={styles.footerLeftCat}>
-              <DoodleCat size={28} color="#CBD5E1" />
-              <DoodleSparkle size={10} color="#FDE047" style={{ position: 'absolute', top: -4, right: -6 }} />
+      {/* 8. 统一高度与垂直基准的底部区域：让卡包与卡片垂直中心在同一直线上，彻底根除位置突跳 */}
+      <View
+        style={[
+          styles.bottomFixedContainer,
+          { paddingBottom: Math.max(insets.bottom, 24) + 12 },
+        ]}
+      >
+        {stage !== 'REVEALED' ? (
+          <View style={styles.preRevealContent}>
+            <Text style={styles.preRevealQuoteLine1}>今天也没啥事。</Text>
+            <View style={styles.preRevealQuoteRow}>
+              <Text style={styles.preRevealQuoteLine2}>那就抽一张吧。</Text>
+              <Text style={styles.quoteSparkle}>✧</Text>
+              <View style={styles.preRevealLine} />
             </View>
+            <View style={styles.preRevealCatCorner}>
+              <DoodleCat size={32} color="#CBD5E1" />
+              <Text style={styles.lifePackTinyText}>LIFE PACK</Text>
+            </View>
+          </View>
+        ) : (
+          <Animated.View style={[styles.bottomRevealArea, animatedControlsStyle]}>
+            {/* 主按钮：收下这张卡 -> */}
+            <ShinyPillButton
+              label="收下这张卡 →"
+              onPress={handleAcceptCard}
+              style={styles.mainActionBtn}
+            />
 
-            {/* 右下生活寄语 */}
-            <View style={styles.footerRightQuote}>
-              <Text style={styles.footerQuoteLine}>一张卡</Text>
-              <Text style={styles.footerQuoteLine}>就是一次</Text>
-              <View style={styles.quoteLastRow}>
-                <Text style={styles.footerQuoteLine}>小小的出发。</Text>
-                <Text style={styles.quoteSparkle}>✧</Text>
+            {/* 次级链接：再抽一张 */}
+            <TouchableOpacity
+              onPress={handleDrawAgain}
+              activeOpacity={0.75}
+              style={styles.albumLinkBtn}
+            >
+              <Text style={styles.albumLinkText}>再抽一张</Text>
+              <div className="album-link-underline" />
+            </TouchableOpacity>
+
+            {/* 底部角落装饰 */}
+            <View style={styles.footerCornerGroup} pointerEvents="none">
+              {/* 左下小猫咪涂鸦 */}
+              <View style={styles.footerLeftCat}>
+                <DoodleCat size={28} color="#CBD5E1" />
+                <DoodleSparkle size={10} color="#FDE047" style={{ position: 'absolute', top: -4, right: -6 }} />
+              </View>
+
+              {/* 右下生活寄语 */}
+              <View style={styles.footerRightQuote}>
+                <Text style={styles.footerQuoteLine}>一张卡</Text>
+                <Text style={styles.footerQuoteLine}>就是一次</Text>
+                <View style={styles.quoteLastRow}>
+                  <Text style={styles.footerQuoteLine}>小小的出发。</Text>
+                  <Text style={styles.quoteSparkle}>✧</Text>
+                </View>
               </View>
             </View>
-          </View>
-        </Animated.View>
-      )}
+          </Animated.View>
+        )}
+      </View>
 
       {/* 页面全局样式补充 */}
       <style>{`
@@ -608,15 +620,21 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
-  preRevealFooter: {
-    position: 'absolute',
-    bottom: 28,
-    left: 20,
-    right: 20,
+  bottomFixedContainer: {
+    width: '100%',
+    minHeight: 124,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 40,
-    pointerEvents: 'none',
+    position: 'relative',
+    zIndex: 50,
+  },
+  preRevealContent: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    position: 'relative',
   },
   preRevealQuoteLine1: {
     color: '#FAF7F2',

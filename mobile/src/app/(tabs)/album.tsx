@@ -119,10 +119,11 @@ export default function AlbumScreen() {
   const handleCardPress = (card: CardDefinition) => {
     if (!card || !card.id) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    router.push({
-      pathname: '/card/[instanceId]',
-      params: { instanceId: card.id, from: 'album' },
-    });
+    try {
+      router.push(`/card/${card.id}?from=album` as any);
+    } catch {
+      router.navigate(`/card/${card.id}?from=album` as any);
+    }
   };
 
   const handleBannerPress = () => {
@@ -130,10 +131,11 @@ export default function AlbumScreen() {
     const list = Array.isArray(allCards) ? allCards.filter(Boolean) : MOCK_CARDS;
     const featuredCard = list.find((c) => c && c.cardCode === '#027') || list[0];
     if (featuredCard && featuredCard.id) {
-      router.push({
-        pathname: '/card/[instanceId]',
-        params: { instanceId: featuredCard.id, from: 'album' },
-      });
+      try {
+        router.push(`/card/${featuredCard.id}?from=album` as any);
+      } catch {
+        router.navigate(`/card/${featuredCard.id}?from=album` as any);
+      }
     }
   };
 
@@ -379,7 +381,7 @@ export default function AlbumScreen() {
                   activeOpacity={0.8}
                 >
                   {/* Holographic metallic double border */}
-                  <View style={styles.cardBorderFrame}>
+                  <View style={styles.cardBorderFrame} pointerEvents="none">
                     {/* Thumbnail Artwork with safe fallback */}
                     <Image
                       source={card.previewImage || require('../../../assets/cards/album/card_01.png')}
@@ -388,7 +390,7 @@ export default function AlbumScreen() {
                     />
 
                     {/* Top Meta: Card Code + Rarity Badge */}
-                    <View style={styles.cardHeaderRow}>
+                    <View style={styles.cardHeaderRow} pointerEvents="none">
                       <View style={styles.cardCodeBadge}>
                         <Text style={styles.cardCodeText}>
                           {card.cardCode || `#0${idx + 1}`}
@@ -409,7 +411,7 @@ export default function AlbumScreen() {
                     </View>
 
                     {/* Bottom Title Bar with dark fade */}
-                    <View style={styles.cardTitleBar}>
+                    <View style={styles.cardTitleBar} pointerEvents="none">
                       <Text style={styles.cardTitleText} numberOfLines={1}>
                         {card.title || '神秘奇遇'}
                       </Text>

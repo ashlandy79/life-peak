@@ -38,7 +38,9 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 
   const handlePressTab = (key: string, route: string) => {
     if (key === 'album') {
-      BadgeService.setAlbumBadge(false);
+      setTimeout(() => {
+        BadgeService.setAlbumBadge(false);
+      }, 50);
     }
     onSelectTab(key, route);
   };
