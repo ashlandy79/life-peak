@@ -13,11 +13,15 @@ class CollectionRepositoryImpl {
     try {
       const stored = await AsyncStorage.getItem(INSTANCES_STORAGE_KEY);
       if (stored) {
-        this.instances = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        this.instances = Array.isArray(parsed) ? parsed : [...INITIAL_USER_INSTANCES];
       } else {
         this.instances = [...INITIAL_USER_INSTANCES];
       }
     } catch {
+      this.instances = [...INITIAL_USER_INSTANCES];
+    }
+    if (!Array.isArray(this.instances)) {
       this.instances = [...INITIAL_USER_INSTANCES];
     }
     this.initialized = true;
@@ -25,7 +29,7 @@ class CollectionRepositoryImpl {
 
   async getUserCardInstances(): Promise<UserCardInstance[]> {
     await this.init();
-    return [...this.instances];
+    return Array.isArray(this.instances) ? [...this.instances] : [...INITIAL_USER_INSTANCES];
   }
 
   async getInstanceById(instanceId: string): Promise<UserCardInstance | undefined> {

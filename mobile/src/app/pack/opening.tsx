@@ -53,9 +53,9 @@ export default function PackOpeningScreen() {
   }, []);
 
   // Card emergence & reveal animation
-  const cardOpacity = useSharedValue(0);
-  const cardScale = useSharedValue(0.92);
-  const cardTranslateY = useSharedValue(20);
+  const cardOpacity = useSharedValue(1);
+  const cardScale = useSharedValue(1.0);
+  const cardTranslateY = useSharedValue(0);
 
   // Bottom action buttons fade-in
   const controlsOpacity = useSharedValue(0);
@@ -131,17 +131,12 @@ export default function PackOpeningScreen() {
     setStage('SEALED');
   };
 
-  // Three.js 物理撕开完成：进入图2（卡片背面居中 + 法阵立即点亮），随后平滑3D翻转至图3（卡片正面）
+  // Three.js 物理撕开完成：卡包自然滑落淡出，无缝展现正中央已就绪的 3D 卡背，随后平滑翻转至正面
   const handleThreeTearComplete = useCallback(() => {
-    // 阶段1：展示图2（卡背居中，法阵立即点亮旋转）
     setStage('CARD_BACK');
     triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
 
-    cardOpacity.value = withTiming(1, { duration: 280 });
-    cardScale.value = withSpring(1.0, { damping: 14, stiffness: 85 });
-    cardTranslateY.value = withSpring(0, { damping: 15, stiffness: 80 });
-
-    // 阶段2：稍作停顿感知图2真实卡背与法阵，随后触发 180° -> 0° 3D 顺畅翻转
+    // 稍作停顿 (160ms) 感知真实卡背与法阵，随后立即触发 180° -> 0° 顺畅 3D 翻转
     setTimeout(() => {
       setIsFlipping(true);
       runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Medium);
@@ -154,18 +149,17 @@ export default function PackOpeningScreen() {
         setStage('REVEALED');
         runOnJS(triggerHaptic)(Haptics.ImpactFeedbackStyle.Light);
 
-        // 阶段3：翻转完成，揭晓页底部操作按钮与提示浮现
-        controlsOpacity.value = withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) });
+        // 翻转完成，揭晓页底部操作按钮与提示平滑升起浮现
+        controlsOpacity.value = withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) });
         controlsTranslateY.value = withSpring(0, { damping: 14 });
       };
 
-      // 触发 3D 翻转
+      // 触发 3D 翻转至正面
       if (tcgCardRef.current?.flipToFront) {
         tcgCardRef.current.flipToFront(850, finishReveal);
       }
-      // 双重安全定时器兜底：900ms 后必进揭晓态，彻底根除 100% 卡死问题
       setTimeout(finishReveal, 900);
-    }, 350);
+    }, 160);
   }, [triggerHaptic]);
 
   const animatedCardContainerStyle = useAnimatedStyle(() => ({
@@ -258,8 +252,8 @@ export default function PackOpeningScreen() {
           <View style={styles.instructionPill}>
             <DoodleSparkle size={16} color="#67E8F9" />
             <Text style={styles.instructionText}>
-              {stage === 'CARD_BACK' || tearProgress >= 1
-                ? '正在撕裂卡包 100%'
+              {tearProgress >= 1
+                ? '卡包已撕开 ✧'
                 : tearProgress > 0
                 ? `正在撕裂卡包 ${Math.round(tearProgress * 100)}%`
                 : '向右滑动卡包即可拆包 ▶'}
@@ -270,9 +264,43 @@ export default function PackOpeningScreen() {
 
       {/* 7. 中央舞台区域 */}
       <View style={styles.stageArea}>
-        {/* 阶段 A：物理卡包撕开舞台（图1） */}
+        {/* 常驻中央全息卡片舞台：提前预热挂载，卡背 180° 正对用户，杜绝重新加载白屏闪烁 */}
+        <Animated.View style={[styles.cosmicCardStage, animatedCardContainerStyle]}>
+          {/* 卡片正下方地面能量法阵：全程旋转点亮 */}
+          <View style={styles.groundRingWrapper}>
+            <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
+          </View>
+
+          {/* 3D 全息卡片本体（初始以背面 180° 居中，随后无缝翻转至正面 0°） */}
+          <View style={styles.holoCardContainer}>
+            <TcgHoloCard
+              ref={tcgCardRef}
+              card={drawResult?.card}
+              isSealed={true}
+              initialRotationY={180}
+              tier={drawResult?.card?.tier || 'rare'}
+              cardWidth={CARD_WIDTH}
+            />
+            {/* 翻转过程中的高光掠影扫光特效 */}
+            {isFlipping && <div className="card-flip-sheen" />}
+          </View>
+
+          {/* 卡片下方全息提示语（翻至正面后浮现） */}
+          {stage === 'REVEALED' && (
+            <View style={styles.holoHintRow}>
+              <Text style={styles.holoHintSparkle}>✧</Text>
+              <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
+              <Text style={styles.holoHintSparkle}>✧</Text>
+            </View>
+          )}
+        </Animated.View>
+
+        {/* 阶段 A：物理卡包撕开舞台（图1），覆盖在卡片正前方 */}
         {stage === 'SEALED' && (
-          <View style={styles.threeStageWrapper}>
+          <View
+            style={[styles.threeStageWrapper, { position: 'absolute' }]}
+            pointerEvents={tearProgress >= 1 ? 'none' : 'auto'}
+          >
             <ThreePackStage
               width={PACK_WIDTH}
               height={PACK_HEIGHT}
@@ -280,39 +308,6 @@ export default function PackOpeningScreen() {
               onTearComplete={handleThreeTearComplete}
             />
           </View>
-        )}
-
-        {/* 阶段 B：真实卡背升起（图2）并在中央平滑 3D 翻转为卡片正面（图3） */}
-        {stage !== 'SEALED' && (
-          <Animated.View style={[styles.cosmicCardStage, animatedCardContainerStyle]}>
-            {/* 卡片正下方地面能量法阵：卡片破袋升起（图2与图3）即全程旋转点亮 */}
-            <View style={styles.groundRingWrapper}>
-              <GroundEnergyRing width={CARD_WIDTH * 1.08} height={85} />
-            </View>
-
-            {/* 3D 全息卡片本体（初始以背面 180° 居中，随后无缝翻转至正面 0°） */}
-            <View style={styles.holoCardContainer}>
-              <TcgHoloCard
-                ref={tcgCardRef}
-                card={drawResult?.card}
-                isSealed={true}
-                initialRotationY={180}
-                tier={drawResult?.card?.tier || 'rare'}
-                cardWidth={CARD_WIDTH}
-              />
-              {/* 翻转过程中的高光掠影扫光特效 */}
-              {isFlipping && <div className="card-flip-sheen" />}
-            </View>
-
-            {/* 卡片下方全息提示语（翻至正面后浮现） */}
-            {stage === 'REVEALED' && (
-              <View style={styles.holoHintRow}>
-                <Text style={styles.holoHintSparkle}>✧</Text>
-                <Text style={styles.holoHintText}>轻触卡片查看全息效果</Text>
-                <Text style={styles.holoHintSparkle}>✧</Text>
-              </View>
-            )}
-          </Animated.View>
         )}
       </View>
 

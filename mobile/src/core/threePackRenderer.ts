@@ -466,14 +466,9 @@ export function mountThreePack(
     side: THREE.DoubleSide,
   });
 
-  const cardGroup = new THREE.Group();
-  const cardMesh = new THREE.Mesh(cardGeo, cardMat);
-  cardGroup.add(cardMesh);
-
   const cardBaseY = -0.42;
-  cardGroup.position.set(0, cardBaseY, -0.04);
-  cardGroup.rotation.y = 0;
-  rootGroup.add(cardGroup);
+  const cardGroup = new THREE.Group();
+  cardGroup.visible = false; // 彻底移除撕包组件内冗余过渡假卡，由中央正式 TcgHoloCard 无缝承接
 
   // 5.3 袋身前膜 (Front Pouch Body)
   const frontGeo = new THREE.PlaneGeometry(packW, packH, 32, 48);

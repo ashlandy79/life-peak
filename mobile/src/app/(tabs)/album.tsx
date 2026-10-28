@@ -37,12 +37,18 @@ export default function AlbumScreen() {
   const [userInstances, setUserInstances] = useState<UserCardInstance[]>([]);
 
   const loadData = useCallback(async () => {
-    const cards = await CardRepository.getAllCards();
-    const instances = await CollectionRepository.getUserCardInstances();
-    if (cards && cards.length > 0) {
-      setAllCards(cards);
+    try {
+      const cards = await CardRepository.getAllCards();
+      const instances = await CollectionRepository.getUserCardInstances();
+      if (Array.isArray(cards) && cards.length > 0) {
+        setAllCards(cards);
+      }
+      if (Array.isArray(instances)) {
+        setUserInstances(instances);
+      }
+    } catch (e) {
+      console.warn('[Album] Failed to load album data:', e);
     }
-    setUserInstances(instances);
   }, []);
 
   useFocusEffect(
@@ -61,44 +67,57 @@ export default function AlbumScreen() {
     }
   };
 
-  // Map of collected cards
+  // 安全构建已收集卡片 ID 集合
   const collectedCardIdSet = useMemo(() => {
     const set = new Set<string>();
-    userInstances.forEach((inst) => {
-      if (inst.status === 'COLLECTED' || inst.status === 'ACTIVE' || inst.status === 'COMPLETED') {
-        set.add(inst.cardId);
-      }
-    });
+    if (Array.isArray(userInstances)) {
+      userInstances.forEach((inst) => {
+        if (
+          inst &&
+          (inst.status === 'COLLECTED' ||
+            inst.status === 'ACTIVE' ||
+            inst.status === 'COMPLETED')
+        ) {
+          if (inst.cardId) {
+            set.add(inst.cardId);
+          }
+        }
+      });
+    }
     return set;
   }, [userInstances]);
 
-  // Counts for pills
-  const totalCount = allCards.length;
-  const collectedCount = userInstances.filter((i) => i.status === 'COLLECTED').length || 12;
+  // 安全计算统计数量
+  const safeCards = Array.isArray(allCards) ? allCards.filter(Boolean) : MOCK_CARDS;
+  const safeInstances = Array.isArray(userInstances) ? userInstances.filter(Boolean) : [];
+  const totalCount = safeCards.length;
+  const collectedCount = safeInstances.filter((i) => i && i.status === 'COLLECTED').length || 12;
   const uncollectedCount = Math.max(totalCount - collectedCount, 4);
-  const rareCount = allCards.filter(
-    (c) => c.rarityTag === 'UR' || c.rarityTag === 'SSR'
+  const rareCount = safeCards.filter(
+    (c) => c && (c.rarityTag === 'UR' || c.rarityTag === 'SSR')
   ).length || 8;
 
-  // Filtered card list
+  // 响应式筛选列表
   const filteredCards = useMemo(() => {
+    const list = Array.isArray(allCards) ? allCards.filter(Boolean) : MOCK_CARDS;
     if (topTab === 'favorite') {
-      return allCards.filter((c) => collectedCardIdSet.has(c.id));
+      return list.filter((c) => c && collectedCardIdSet.has(c.id));
     }
     switch (filter) {
       case 'COLLECTED':
-        return allCards.filter((c) => collectedCardIdSet.has(c.id));
+        return list.filter((c) => c && collectedCardIdSet.has(c.id));
       case 'UNCOLLECTED':
-        return allCards.filter((c) => !collectedCardIdSet.has(c.id));
+        return list.filter((c) => c && !collectedCardIdSet.has(c.id));
       case 'RARE':
-        return allCards.filter((c) => c.rarityTag === 'UR' || c.rarityTag === 'SSR');
+        return list.filter((c) => c && (c.rarityTag === 'UR' || c.rarityTag === 'SSR'));
       case 'ALL':
       default:
-        return allCards;
+        return list;
     }
   }, [allCards, filter, topTab, collectedCardIdSet]);
 
   const handleCardPress = (card: CardDefinition) => {
+    if (!card || !card.id) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     router.push({
       pathname: '/card/[instanceId]',
@@ -108,8 +127,9 @@ export default function AlbumScreen() {
 
   const handleBannerPress = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    const featuredCard = allCards.find((c) => c.cardCode === '#027') || allCards[0];
-    if (featuredCard) {
+    const list = Array.isArray(allCards) ? allCards.filter(Boolean) : MOCK_CARDS;
+    const featuredCard = list.find((c) => c && c.cardCode === '#027') || list[0];
+    if (featuredCard && featuredCard.id) {
       router.push({
         pathname: '/card/[instanceId]',
         params: { instanceId: featuredCard.id, from: 'album' },
@@ -117,14 +137,15 @@ export default function AlbumScreen() {
     }
   };
 
-  // Calculate 4-column dimensions
-  const contentWidth = Math.min(WINDOW_WIDTH, CONTAINER_MAX_WIDTH);
-  const cardWidth = Math.floor((contentWidth - PADDING * 2 - GAP * 3) / 4);
+  // 安全计算 4 列卡片尺寸，避免 NaN 或负数导致渲染崩溃
+  const screenW = WINDOW_WIDTH && WINDOW_WIDTH > 0 ? WINDOW_WIDTH : 390;
+  const contentWidth = Math.min(screenW, CONTAINER_MAX_WIDTH);
+  const cardWidth = Math.max(68, Math.floor((contentWidth - PADDING * 2 - GAP * 3) / 4));
   const cardHeight = Math.floor(cardWidth * 1.38);
 
   return (
     <View style={styles.screen}>
-      {/* 1. Deep cosmic starry background */}
+      {/* 1. 深色星空基础底图 */}
       <Image
         source={require('../../../assets/draw_bg.png')}
         style={StyleSheet.absoluteFill}
@@ -218,11 +239,9 @@ export default function AlbumScreen() {
             {/* Right mascot doodle cat */}
             <View style={styles.headerRightCat}>
               <DoodleCat size={26} color="#FAF7F2" />
-              <DoodleSparkle
-                size={9}
-                color="#FDE047"
-                style={{ position: 'absolute', top: -3, right: -5 }}
-              />
+              <View style={styles.catSparkleWrapper} pointerEvents="none">
+                <DoodleSparkle size={9} color="#FDE047" />
+              </View>
             </View>
           </View>
 
@@ -345,6 +364,7 @@ export default function AlbumScreen() {
           {/* 4-Column Card Grid */}
           <View style={styles.gridContainer}>
             {filteredCards.map((card, idx) => {
+              if (!card) return null;
               const isCollected = collectedCardIdSet.has(card.id);
               const rarity = card.rarityTag || 'SR';
 
@@ -360,9 +380,9 @@ export default function AlbumScreen() {
                 >
                   {/* Holographic metallic double border */}
                   <View style={styles.cardBorderFrame}>
-                    {/* Thumbnail Artwork */}
+                    {/* Thumbnail Artwork with safe fallback */}
                     <Image
-                      source={card.previewImage}
+                      source={card.previewImage || require('../../../assets/cards/album/card_01.png')}
                       style={StyleSheet.absoluteFill}
                       contentFit="cover"
                     />
@@ -391,7 +411,7 @@ export default function AlbumScreen() {
                     {/* Bottom Title Bar with dark fade */}
                     <View style={styles.cardTitleBar}>
                       <Text style={styles.cardTitleText} numberOfLines={1}>
-                        {card.title}
+                        {card.title || '神秘奇遇'}
                       </Text>
                     </View>
                   </View>
@@ -484,15 +504,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#38BDF8',
     borderRadius: 2,
     marginTop: 4,
-    shadowColor: '#38BDF8',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
   },
   headerRightCat: {
     width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  catSparkleWrapper: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
   },
 
   /* Slogan */
@@ -504,11 +527,8 @@ const styles = StyleSheet.create({
   sloganText: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(253, 224, 71, 0.92)',
+    color: '#FDE047',
     letterSpacing: 1.5,
-    textShadowColor: 'rgba(253, 224, 71, 0.4)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
   },
 
   /* Showcase Banner */
@@ -524,10 +544,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
   },
   bannerLeft: {
     flex: 1,
@@ -608,10 +624,6 @@ const styles = StyleSheet.create({
   filterPillActive: {
     backgroundColor: '#0284C7',
     borderColor: '#38BDF8',
-    shadowColor: '#38BDF8',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.55,
-    shadowRadius: 10,
   },
   filterPillText: {
     fontSize: 11.5,
@@ -634,15 +646,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     borderRadius: 10,
     overflow: 'hidden',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
   },
   cardBorderFrame: {
     flex: 1,
     borderRadius: 10,
-    borderWidth: 1.2,
+    borderWidth: 1,
     borderColor: 'rgba(224, 231, 255, 0.36)',
     overflow: 'hidden',
     backgroundColor: '#12172A',

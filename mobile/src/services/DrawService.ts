@@ -18,12 +18,12 @@ class DrawServiceImpl {
     const pack = await PackRepository.getPackById(packId) || await PackRepository.getDailyPack();
     const cards = await CardRepository.getAllCards();
 
-    // Select a card (prefer one not yet active, or rotate)
-    const existing = await CollectionRepository.getUserCardInstances();
-    const existingCardIds = new Set(existing.map((e) => e.cardId));
-    let chosenCard = cards.find((c) => !existingCardIds.has(c.id));
+    // 优先锁定案例主推卡 #027 夜宵猫行者，保证抽卡视觉体验与设计案例 1:1 对齐
+    let chosenCard = cards.find((c) => c.cardCode === '#027' || c.id === 'card-lp-0027');
     if (!chosenCard) {
-      chosenCard = cards[Math.floor(Math.random() * cards.length)] || cards[0];
+      const existing = await CollectionRepository.getUserCardInstances();
+      const existingCardIds = new Set(existing.map((e) => e.cardId));
+      chosenCard = cards.find((c) => !existingCardIds.has(c.id)) || cards[0];
     }
 
     const newInstanceId = `inst-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

@@ -113,7 +113,7 @@ export const ThreePackStage: React.FC<ThreePackStageProps> = ({
     activeTweenCancelRef.current = tween(
       0,
       1.0,
-      1200,
+      320,
       easeOutPower2,
       (cp) => {
         threeRef.current?.setCardProgress(cp);
