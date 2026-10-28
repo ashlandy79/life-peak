@@ -52,27 +52,18 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   };
 
   const renderIcon = (key: string, active: boolean) => {
-    const iconColor = active ? colors.moss : '#9C9384';
-    const strokeWidth = active ? '2.4' : '2.0';
+    const iconColor = active ? '#FAF7F2' : '#7E8B9B';
+    const strokeWidth = active ? '2.2' : '1.8';
 
     switch (key) {
       case 'home':
         return (
           <Svg width={24} height={24} viewBox="0 0 24 24">
             <Path
-              d="M3 10.5 L12 3 L21 10.5 V20 C21 20.6 20.6 21 20 21 H4 C3.4 21 3 20.6 3 20 Z"
-              fill={active ? 'rgba(45, 79, 56, 0.12)' : 'none'}
+              d="M12 3 L2.5 11.5 H6 V20.5 C6 21 6.5 21.5 7 21.5 H10.5 V15.5 H13.5 V21.5 H17 C17.5 21.5 18 21 18 20.5 V11.5 H21.5 Z"
+              fill={active ? '#FAF7F2' : 'none'}
               stroke={iconColor}
               strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <Path
-              d="M9 21 V12 H15 V21"
-              fill="none"
-              stroke={iconColor}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
               strokeLinejoin="round"
             />
           </Svg>
@@ -85,13 +76,13 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               y="4"
               width="16"
               height="16"
-              rx="3"
-              fill={active ? 'rgba(45, 79, 56, 0.12)' : 'none'}
+              rx="4"
+              fill={active ? 'rgba(250, 247, 242, 0.15)' : 'none'}
               stroke={iconColor}
               strokeWidth={strokeWidth}
             />
             <Path
-              d="M8 12 L11 15 L16 9"
+              d="M8.5 12 L11 14.5 L15.5 9.5"
               fill="none"
               stroke={iconColor}
               strokeWidth={strokeWidth}
@@ -103,31 +94,26 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
       case 'album':
         return (
           <Svg width={24} height={24} viewBox="0 0 24 24">
-            <Rect
-              x="3"
-              y="6"
-              width="14"
-              height="15"
-              rx="2.5"
-              fill={active ? 'rgba(45, 79, 56, 0.12)' : 'none'}
-              stroke={iconColor}
-              strokeWidth={strokeWidth}
-            />
             <Path
-              d="M7 6 V4 C7 3.4 7.4 3 8 3 H19 C19.6 3 20 3.4 20 4 V17 C20 17.6 19.6 18 19 18 H17"
+              d="M4 19.5 C4 18.1 5.1 17 6.5 17 H20"
               fill="none"
               stroke={iconColor}
               strokeWidth={strokeWidth}
               strokeLinecap="round"
-              strokeLinejoin="round"
             />
-            <Circle
-              cx="10"
-              cy="12"
-              r="2"
-              fill={active ? colors.moss : 'none'}
+            <Path
+              d="M6.5 2.5 H20 V21.5 H6.5 C5.1 21.5 4 20.4 4 19 V5 C4 3.6 5.1 2.5 6.5 2.5 Z"
+              fill={active ? 'rgba(250, 247, 242, 0.15)' : 'none'}
               stroke={iconColor}
               strokeWidth={strokeWidth}
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M11.5 5.5 V10 L13.5 8.5 L15.5 10 V5.5"
+              fill={active ? '#FAF7F2' : 'none'}
+              stroke={iconColor}
+              strokeWidth="1.6"
+              strokeLinejoin="round"
             />
           </Svg>
         );
@@ -137,13 +123,13 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             <Circle
               cx="12"
               cy="8"
-              r="4"
-              fill={active ? 'rgba(45, 79, 56, 0.12)' : 'none'}
+              r="4.2"
+              fill={active ? 'rgba(250, 247, 242, 0.15)' : 'none'}
               stroke={iconColor}
               strokeWidth={strokeWidth}
             />
             <Path
-              d="M4 20 C4 16.5 7.5 15 12 15 C16.5 15 20 16.5 20 20"
+              d="M4.5 20 C4.5 16.2 7.8 14 12 14 C16.2 14 19.5 16.2 19.5 20"
               fill="none"
               stroke={iconColor}
               strokeWidth={strokeWidth}
@@ -183,7 +169,6 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
               {tab.label}
             </Text>
-            {isActive && <View style={styles.activeDot} />}
           </TouchableOpacity>
         );
       })}
@@ -194,15 +179,15 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 const styles = StyleSheet.create({
   barContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#050B16',
     borderTopWidth: 1,
-    borderTopColor: '#ECE5D8',
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
     paddingTop: 8,
-    shadowColor: '#2D2823',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 12,
   },
   tabButton: {
     flex: 1,
@@ -218,19 +203,13 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#8F8575',
-    marginTop: 3,
+    color: '#7E8B9B',
+    marginTop: 4,
+    letterSpacing: 0.3,
   },
   tabLabelActive: {
     fontWeight: '700',
-    color: colors.moss,
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.moss,
-    marginTop: 2,
+    color: '#FAF7F2',
   },
   albumBadge: {
     position: 'absolute',
@@ -244,7 +223,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 4,
     borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    borderColor: '#050B16',
     shadowColor: '#EF4444',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.4,

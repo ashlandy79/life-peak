@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
+  Text,
+  TouchableOpacity,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -120,17 +122,19 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      {/* 1. 首页背景：图3 温暖波光日光折射原图 */}
-      <Image
-        source={require('../../../assets/home_bg.jpg')}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-      />
+      {/* 1. 首页上半部分背景：图2 深空宇宙轨道与水面涟漪 (仅占约1/2位置) */}
+      <View style={styles.cosmicTopBgContainer}>
+        <Image
+          source={require('../../../assets/home_cosmic_bg.jpg')}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition="top center"
+        />
+        {/* 底部平滑渐变过度至下半部分深蓝色底色 */}
+        <div className="cosmic-bg-fade-mask" />
+      </View>
 
-      {/* 2. 柔和波光粼粼流转微光层 (Shimmer Caustics) */}
-      <div className="home-caustic-shimmer" />
-
-      {/* 3. 顶部手绘品牌与日期状态栏 */}
+      {/* 2. 顶部手绘品牌与日期状态栏 */}
       <BrandHeader
         dateText="9月20日 星期日"
         onPressNotification={() => {
@@ -146,7 +150,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.moss}
+            tintColor="#67E8F9"
           />
         }
       >
@@ -175,6 +179,28 @@ export default function HomeScreen() {
             onPress={handlePressPuzzle}
           />
         )}
+
+        {/* 今日抽卡快捷长条卡片 (图3 快捷入口) */}
+        <TouchableOpacity
+          style={styles.todayDrawBanner}
+          onPress={handleOpenPack}
+          activeOpacity={0.85}
+        >
+          <View style={styles.todayDrawLeft}>
+            <Image
+              source={require('../../../assets/today_draw_minicard.png')}
+              style={styles.todayDrawMiniCard}
+              contentFit="cover"
+            />
+          </View>
+          <View style={styles.todayDrawContent}>
+            <Text style={styles.todayDrawTitle}>今日抽卡</Text>
+            <Text style={styles.todayDrawSubtitle}>让生活成为一种收藏</Text>
+          </View>
+          <View style={styles.todayDrawArrowBtn}>
+            <Text style={styles.todayDrawArrow}>›</Text>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Flying Star into Album TabBar Animation */}
@@ -182,42 +208,19 @@ export default function HomeScreen() {
         <FlyingStarToAlbum onComplete={handleFlyingStarComplete} />
       )}
 
-      {/* 首页波光粼粼流光动画 */}
+      {/* 渐变遮罩动画与微光 */}
       <style>{`
-        .home-caustic-shimmer {
+        .cosmic-bg-fade-mask {
           position: absolute;
           inset: 0;
           pointer-events: none;
-          background:
-            radial-gradient(
-              ellipse at 75% 25%,
-              rgba(255, 255, 255, 0.42) 0%,
-              rgba(254, 240, 138, 0.15) 35%,
-              transparent 70%
-            ),
-            radial-gradient(
-              ellipse at 25% 65%,
-              rgba(255, 255, 255, 0.3) 0%,
-              rgba(103, 232, 249, 0.12) 40%,
-              transparent 75%
-            );
-          mix-blend-mode: soft-light;
-          animation: caustic-sway 10s ease-in-out infinite alternate;
-        }
-
-        @keyframes caustic-sway {
-          0% {
-            opacity: 0.7;
-            transform: scale(1.0);
-          }
-          50% {
-            opacity: 0.95;
-            transform: scale(1.03) translate3d(1%, -1%, 0);
-          }
-          100% {
-            opacity: 0.75;
-            transform: scale(0.99) translate3d(-1%, 1%, 0);
-          }
+          background: linear-gradient(
+            180deg,
+            rgba(6, 12, 23, 0) 0%,
+            rgba(6, 12, 23, 0) 65%,
+            rgba(6, 12, 23, 0.75) 88%,
+            #060c17 100%
+          );
         }
       `}</style>
     </View>
@@ -227,14 +230,90 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#FAF7F2',
+    backgroundColor: '#060C17',
     overflow: 'hidden',
     position: 'relative',
   },
+  cosmicTopBgContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '52%',
+    overflow: 'hidden',
+    zIndex: 0,
+  },
   scrollView: {
     flex: 1,
+    zIndex: 10,
   },
   scrollContent: {
     paddingBottom: 40,
+  },
+  todayDrawBanner: {
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 18,
+    backgroundColor: 'rgba(13, 23, 42, 0.88)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(103, 232, 249, 0.22)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  todayDrawLeft: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(253, 224, 71, 0.6)',
+    shadowColor: '#FDE047',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+  },
+  todayDrawMiniCard: {
+    width: '100%',
+    height: '100%',
+  },
+  todayDrawContent: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  todayDrawTitle: {
+    color: '#FAF7F2',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  todayDrawSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 3,
+    letterSpacing: 0.3,
+  },
+  todayDrawArrowBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  todayDrawArrow: {
+    color: '#E2E8F0',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: -2,
   },
 });

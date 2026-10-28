@@ -23,10 +23,13 @@ export const PuzzlePreviewPanel: React.FC<PuzzlePreviewPanelProps> = ({
       onPress={onPress}
       activeOpacity={0.85}
     >
+      {/* 顶部金色流光层 */}
+      <div className="golden-sheen-beam" />
+
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
-          <DoodleSparkle size={16} color={colors.bronze} style={styles.sparkleIcon} />
+          <DoodleSparkle size={16} color="#FDE047" style={styles.sparkleIcon} />
           <Text style={styles.titleText}>今日拼图</Text>
         </View>
 
@@ -54,8 +57,8 @@ export const PuzzlePreviewPanel: React.FC<PuzzlePreviewPanelProps> = ({
                 ]}
               >
                 <DoodlePuzzlePiece
-                  size={20}
-                  color={isUnlocked ? '#FFFFFF' : '#C2B8A8'}
+                  size={18}
+                  color={isUnlocked ? '#FFFFFF' : '#64748B'}
                   filled={isUnlocked}
                 />
                 <Text
@@ -78,7 +81,7 @@ export const PuzzlePreviewPanel: React.FC<PuzzlePreviewPanelProps> = ({
               {remainingCount === 0 ? '已集齐✨' : `还差 ${remainingCount} 片~`}
             </Text>
           </View>
-          <DoodleCat size={32} color={colors.ink} />
+          <DoodleCat size={32} color="#FAF7F2" />
         </View>
       </View>
     </TouchableOpacity>
@@ -87,19 +90,20 @@ export const PuzzlePreviewPanel: React.FC<PuzzlePreviewPanelProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 18,
+    marginHorizontal: 16,
     marginVertical: 10,
-    marginBottom: 24,
-    backgroundColor: '#FFFFFF',
+    marginBottom: 20,
+    backgroundColor: 'rgba(10, 19, 35, 0.88)',
     borderRadius: 22,
     padding: 18,
-    borderWidth: 1.5,
-    borderColor: '#EDE7DC',
-    shadowColor: '#2D2823',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    position: 'relative',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 6,
   },
   headerRow: {
     flexDirection: 'row',
@@ -114,29 +118,30 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   titleText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.ink,
-    letterSpacing: 0.3,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FAF7F2',
+    letterSpacing: 0.5,
   },
   badge: {
-    backgroundColor: '#F3EFE8',
+    backgroundColor: 'rgba(253, 224, 71, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E6DFC8',
+    borderColor: 'rgba(253, 224, 71, 0.25)',
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: colors.bronze,
+    color: '#FDE047',
   },
   subtitleText: {
     fontSize: 12,
-    color: colors.inkMuted,
+    color: '#94A3B8',
     marginTop: 4,
     marginBottom: 14,
+    letterSpacing: 0.3,
   },
   contentRow: {
     flexDirection: 'row',
@@ -151,23 +156,23 @@ const styles = StyleSheet.create({
   slotBox: {
     width: 44,
     height: 48,
-    borderRadius: 10,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
   slotBoxUnlocked: {
-    backgroundColor: colors.bronze,
-    shadowColor: colors.bronze,
+    backgroundColor: '#F59E0B',
+    shadowColor: '#FDE047',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    elevation: 4,
   },
   slotBoxLocked: {
-    backgroundColor: '#F7F4EE',
-    borderWidth: 1.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.035)',
+    borderWidth: 1.2,
     borderStyle: 'dashed',
-    borderColor: '#DBD2C3',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   slotIndexText: {
     fontSize: 10,
@@ -178,7 +183,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   slotTextLocked: {
-    color: '#B0A696',
+    color: '#64748B',
   },
   mascotContainer: {
     alignItems: 'center',
@@ -186,17 +191,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   mascotBubble: {
-    backgroundColor: '#FFF9E6',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#EFE2C1',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     marginBottom: 4,
   },
   bubbleText: {
     fontSize: 10,
     fontWeight: '600',
-    color: colors.ink,
+    color: '#FAF7F2',
   },
 });

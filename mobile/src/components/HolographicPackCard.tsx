@@ -94,34 +94,6 @@ export const HolographicPackCard: React.FC<HolographicPackCardProps> = ({
 
   return (
     <View style={styles.cardContainer}>
-      {/* Decorative Doodles behind pack */}
-      <DoodleStar
-        size={22}
-        color={colors.bronze}
-        style={styles.doodleStarTopRight}
-      />
-      <DoodleSparkle
-        size={26}
-        color="#E6C875"
-        style={styles.doodleSparkleLeft}
-      />
-      <DoodlePlanet
-        size={26}
-        color="rgba(45, 79, 56, 0.4)"
-        style={styles.doodlePlanetRight}
-      />
-
-      {/* Top Sticky Note Banner */}
-      <View style={styles.stickyNoteWrapper}>
-        <View style={styles.stickyNoteTape} />
-        <View style={styles.stickyNote}>
-          <DoodleCat size={20} color={colors.ink} style={styles.noteCat} />
-          <Text style={styles.stickyNoteText}>
-            {isSealedCard ? '今日已抽取 · 封印中的奇遇' : quote}
-          </Text>
-        </View>
-      </View>
-
       {/* Central Floating Element: Sealed Card OR Sealed Foil Pack */}
       <TouchableOpacity
         style={styles.touchableCenter}
@@ -149,90 +121,51 @@ export const HolographicPackCard: React.FC<HolographicPackCardProps> = ({
         </Animated.View>
       </TouchableOpacity>
 
-      {/* Pack Series Name & Subtitle */}
-      <View style={styles.packMetaContainer}>
-        <Text style={styles.packSubtitle}>
-          {isSealedCard && sealedCard
-            ? `${sealedCard.cardCode} · ${sealedCard.title}`
-            : packTitle}
-        </Text>
-      </View>
-
-      {/* Primary CTA Button */}
+      {/* Primary Frosted Glass CTA Button (图1 毛玻璃药丸按钮) */}
       <TouchableOpacity
-        style={styles.ctaButton}
+        style={[styles.ctaButton, { className: 'frosted-pill-btn' } as any]}
         onPress={handlePress}
         activeOpacity={0.85}
       >
+        <Text style={styles.ctaSparkle}>✦</Text>
         <Text style={styles.ctaButtonText}>
           {isSealedCard ? '查看封印卡片' : '拆开看看'}
         </Text>
         <Text style={styles.ctaArrow}>→</Text>
       </TouchableOpacity>
+
+      <style>{`
+        .frosted-pill-btn {
+          backdrop-filter: blur(18px) saturate(180%);
+          -webkit-backdrop-filter: blur(18px) saturate(180%);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(230, 240, 255, 0.78) 100%) !important;
+          box-shadow: 0 8px 30px rgba(103, 232, 249, 0.32), 0 2px 10px rgba(0, 0, 0, 0.3) !important;
+          transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.2s ease;
+        }
+        .frosted-pill-btn:hover {
+          transform: scale(1.02);
+          box-shadow: 0 10px 36px rgba(103, 232, 249, 0.45), 0 2px 12px rgba(0, 0, 0, 0.35) !important;
+        }
+        .frosted-pill-btn:active {
+          transform: scale(0.97);
+        }
+      `}</style>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   cardContainer: {
-    width: CARD_WIDTH,
-    alignSelf: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingTop: 16,
-    paddingBottom: 22,
-    paddingHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 16,
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    paddingTop: 8,
+    paddingBottom: 16,
     position: 'relative',
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
   },
   touchableCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  stickyNoteWrapper: {
-    alignItems: 'center',
-    marginBottom: 16,
-    zIndex: 10,
-  },
-  stickyNoteTape: {
-    width: 60,
-    height: 12,
-    backgroundColor: 'rgba(230, 200, 117, 0.45)',
-    borderRadius: 3,
-    marginBottom: -6,
-    zIndex: 12,
-  },
-  stickyNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF9E8',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E8DCB8',
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  noteCat: {
-    marginRight: 6,
-  },
-  stickyNoteText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.ink,
-    letterSpacing: 0.3,
   },
   packWrapper: {
     width: PACK_WIDTH,
@@ -251,62 +184,43 @@ const styles = StyleSheet.create({
     width: PACK_WIDTH * 0.7,
     height: 14,
     borderRadius: 8,
-    backgroundColor: 'rgba(23, 23, 21, 0.12)',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
     zIndex: -1,
-  },
-  packMetaContainer: {
-    alignItems: 'center',
-    marginTop: 14,
-    marginBottom: 16,
-  },
-  packSubtitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.inkMuted,
-    letterSpacing: 0.5,
   },
   ctaButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.ink,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 24,
-    shadowColor: colors.ink,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingVertical: 13,
+    paddingHorizontal: 32,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#67E8F9',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 8,
+    marginTop: 20,
+    minWidth: 190,
+  },
+  ctaSparkle: {
+    color: '#18181B',
+    fontSize: 15,
+    fontWeight: '800',
+    marginRight: 8,
   },
   ctaButtonText: {
-    color: colors.paper,
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginRight: 6,
+    color: '#18181B',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1.2,
   },
   ctaArrow: {
-    color: colors.paper,
+    color: '#18181B',
     fontSize: 16,
-    fontWeight: '700',
-  },
-  doodleStarTopRight: {
-    position: 'absolute',
-    top: 24,
-    right: 22,
-    zIndex: 1,
-  },
-  doodleSparkleLeft: {
-    position: 'absolute',
-    top: 140,
-    left: 14,
-    zIndex: 1,
-  },
-  doodlePlanetRight: {
-    position: 'absolute',
-    bottom: 90,
-    right: 16,
-    zIndex: 1,
+    fontWeight: '800',
+    marginLeft: 8,
   },
 });

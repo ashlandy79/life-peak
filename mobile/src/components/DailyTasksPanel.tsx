@@ -39,10 +39,12 @@ export const DailyTasksPanel: React.FC<DailyTasksPanelProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* 顶部金色流光层 (图1 金色外侧流光特效) */}
+      <div className="golden-sheen-beam" />
+
       {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.titleRow}>
-          <DoodlePaperclip size={18} color={colors.inkMuted} style={styles.clipIcon} />
           <Text style={styles.titleText}>今日小事</Text>
         </View>
 
@@ -53,7 +55,7 @@ export const DailyTasksPanel: React.FC<DailyTasksPanelProps> = ({
         </View>
       </View>
 
-      <Text style={styles.subtitleText}>微小的改变，是奇迹的起点</Text>
+      <Text style={styles.subtitleText}>完成小任务，积累你的小确幸</Text>
 
       {/* Task list */}
       <View style={styles.listContainer}>
@@ -66,23 +68,25 @@ export const DailyTasksPanel: React.FC<DailyTasksPanelProps> = ({
               onPress={() => (onPressTaskDetail ? onPressTaskDetail(task.id) : handleToggle(task.id))}
               activeOpacity={0.7}
             >
-              {/* Checkbox */}
+              {/* Checkbox (图1 圆形微光勾选框) */}
               <TouchableOpacity
                 style={[styles.checkbox, isDone && styles.checkboxDone]}
                 onPress={() => handleToggle(task.id)}
                 activeOpacity={0.8}
               >
-                {isDone && (
-                  <Svg width={14} height={14} viewBox="0 0 24 24">
+                {isDone ? (
+                  <Svg width={13} height={13} viewBox="0 0 24 24">
                     <Path
                       d="M20 6 L9 17 L4 12"
                       fill="none"
                       stroke="#FFFFFF"
-                      strokeWidth="2.8"
+                      strokeWidth="3.2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </Svg>
+                ) : (
+                  <View style={styles.checkboxInnerUnchecked} />
                 )}
               </TouchableOpacity>
 
@@ -93,39 +97,51 @@ export const DailyTasksPanel: React.FC<DailyTasksPanelProps> = ({
                 </Text>
               </View>
 
-              {/* Reward puzzle piece */}
+              {/* Reward puzzle piece (图1 +1 ✦ 标志) */}
               <View style={styles.rewardContainer}>
-                <DoodlePuzzlePiece
-                  size={16}
-                  color={isDone ? colors.bronze : '#BDB4A5'}
-                  filled={isDone}
-                />
                 <Text style={[styles.rewardText, isDone && styles.rewardTextDone]}>
                   +1
                 </Text>
+                <Text style={styles.rewardSparkle}>✦</Text>
               </View>
             </TouchableOpacity>
           );
         })}
       </View>
+
+      <style>{`
+        .golden-sheen-beam {
+          position: absolute;
+          top: -1.5px;
+          left: 6%;
+          width: 55%;
+          height: 3px;
+          border-radius: 3px;
+          background: linear-gradient(90deg, rgba(253, 224, 71, 0) 0%, rgba(253, 224, 71, 0.95) 40%, rgba(245, 158, 11, 0.8) 80%, rgba(245, 158, 11, 0) 100%);
+          box-shadow: 0 -2px 14px rgba(253, 224, 71, 0.65), 0 0 8px rgba(245, 158, 11, 0.5);
+          pointer-events: none;
+          z-index: 10;
+        }
+      `}</style>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 18,
+    marginHorizontal: 16,
     marginVertical: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(10, 19, 35, 0.88)',
     borderRadius: 22,
     padding: 18,
-    borderWidth: 1.5,
-    borderColor: '#EDE7DC',
-    shadowColor: '#2D2823',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    position: 'relative',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 6,
   },
   headerRow: {
     flexDirection: 'row',
@@ -136,66 +152,73 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  clipIcon: {
-    marginRight: 6,
-    transform: [{ rotate: '15deg' }],
-  },
   titleText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.ink,
-    letterSpacing: 0.3,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FAF7F2',
+    letterSpacing: 0.5,
   },
   badge: {
-    backgroundColor: '#F3EFE8',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E6DFC8',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    color: colors.moss,
+    color: '#E2E8F0',
   },
   subtitleText: {
     fontSize: 12,
-    color: colors.inkMuted,
+    color: '#94A3B8',
     marginTop: 4,
-    marginBottom: 12,
+    marginBottom: 14,
+    letterSpacing: 0.3,
   },
   listContainer: {
-    gap: 8,
+    gap: 9,
   },
   taskItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
     borderRadius: 14,
-    backgroundColor: '#FAF7F2',
+    backgroundColor: 'rgba(255, 255, 255, 0.035)',
     borderWidth: 1,
-    borderColor: '#EFEAE1',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   taskItemDone: {
-    backgroundColor: '#F6F3ED',
-    opacity: 0.85,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    opacity: 0.75,
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    borderWidth: 1.8,
-    borderColor: '#C4BCAD',
-    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
+  },
+  checkboxInnerUnchecked: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'transparent',
   },
   checkboxDone: {
-    backgroundColor: colors.moss,
-    borderColor: colors.moss,
+    backgroundColor: '#1E293B',
+    borderColor: '#FDE047',
+    shadowColor: '#FDE047',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 5,
   },
   taskContent: {
     flex: 1,
@@ -203,27 +226,33 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.ink,
+    color: '#FAF7F2',
+    letterSpacing: 0.2,
   },
   taskTitleDone: {
-    color: '#9C9384',
+    color: '#64748B',
     textDecorationLine: 'line-through',
   },
   rewardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    gap: 3,
   },
   rewardText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#9C9384',
-    marginLeft: 3,
+    color: '#64748B',
   },
   rewardTextDone: {
-    color: colors.bronze,
+    color: '#FDE047',
+  },
+  rewardSparkle: {
+    color: '#FDE047',
+    fontSize: 11,
+    textShadowColor: 'rgba(253, 224, 71, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
 });

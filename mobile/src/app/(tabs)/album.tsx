@@ -139,11 +139,11 @@ export default function AlbumScreen() {
     }
   };
 
-  // 安全计算 4 列卡片尺寸，避免 NaN 或负数导致渲染崩溃
+  // 安全计算 3 列卡片尺寸 (图4 3列全景大图鉴展示)
   const screenW = WINDOW_WIDTH && WINDOW_WIDTH > 0 ? WINDOW_WIDTH : 390;
   const contentWidth = Math.min(screenW, CONTAINER_MAX_WIDTH);
-  const cardWidth = Math.max(68, Math.floor((contentWidth - PADDING * 2 - GAP * 3) / 4));
-  const cardHeight = Math.floor(cardWidth * 1.38);
+  const cardWidth = Math.max(90, Math.floor((contentWidth - PADDING * 2 - GAP * 2) / 3));
+  const cardHeight = Math.floor(cardWidth * 1.44);
 
   return (
     <View style={styles.screen}>
@@ -170,119 +170,58 @@ export default function AlbumScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.mainWrapper, { maxWidth: CONTAINER_MAX_WIDTH }]}>
-          {/* Header Bar: LIFE PACK bubble, center tabs, mascot cat */}
+          {/* Header Bar (图4 大标题卡册 + 寄语 + 右侧星芒) */}
           <View style={styles.headerBar}>
-            {/* Left brand pill */}
-            <View style={styles.brandPill}>
-              <Text style={styles.brandText}>LIFE PACK</Text>
-              <Text style={styles.brandSparkle}>✧</Text>
+            <View style={styles.headerTitleGroup}>
+              <Text style={styles.albumMainTitle}>卡册</Text>
+              <Text style={styles.albumSubtitle}>收藏每一个值得纪念的瞬间</Text>
             </View>
 
-            {/* Center navigation tabs: 卡册 | 成就 | 收藏 */}
-            <View style={styles.topTabsGroup}>
-              <TouchableOpacity
-                style={styles.topTabItem}
-                onPress={() => {
-                  triggerHaptic();
-                  setTopTab('album');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.topTabText,
-                    topTab === 'album' && styles.topTabTextActive,
-                  ]}
-                >
-                  卡册
-                </Text>
-                {topTab === 'album' && <View style={styles.topTabIndicator} />}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.topTabItem}
-                onPress={() => {
-                  triggerHaptic();
-                  setTopTab('achievement');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.topTabText,
-                    topTab === 'achievement' && styles.topTabTextActive,
-                  ]}
-                >
-                  成就
-                </Text>
-                {topTab === 'achievement' && <View style={styles.topTabIndicator} />}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.topTabItem}
-                onPress={() => {
-                  triggerHaptic();
-                  setTopTab('favorite');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.topTabText,
-                    topTab === 'favorite' && styles.topTabTextActive,
-                  ]}
-                >
-                  收藏
-                </Text>
-                {topTab === 'favorite' && <View style={styles.topTabIndicator} />}
-              </TouchableOpacity>
-            </View>
-
-            {/* Right mascot doodle cat */}
-            <View style={styles.headerRightCat}>
-              <DoodleCat size={26} color="#FAF7F2" />
-              <View style={styles.catSparkleWrapper} pointerEvents="none">
-                <DoodleSparkle size={9} color="#FDE047" />
-              </View>
+            <View style={styles.headerRightSparkle}>
+              <Text style={styles.bigSparkleIcon}>✦</Text>
             </View>
           </View>
 
-          {/* Slogan */}
-          <View style={styles.sloganRow}>
-            <Text style={styles.sloganText}>✧ 收集每一个值得纪念的瞬间 ✧</Text>
-          </View>
-
-          {/* Featured Showcase Banner (本期精选 稀有) */}
+          {/* Featured Showcase Banner (图4 本期精选 3D玻璃钟罩展台) */}
           <TouchableOpacity
             style={styles.showcaseBanner}
             onPress={handleBannerPress}
             activeOpacity={0.88}
           >
-            <View style={styles.bannerLeft}>
-              <View style={styles.bannerTagRow}>
-                <View style={styles.bannerTagPill}>
-                  <Text style={styles.bannerTagText}>本期精选 稀有</Text>
-                </View>
-              </View>
-
-              <Text style={styles.bannerTitle}>星空漫游</Text>
-              <Text style={styles.bannerSubtitle}>第 04 期 · 限定闪卡已上线</Text>
-
-              <View style={styles.bannerDetailBtn}>
-                <Text style={styles.bannerDetailBtnText}>查看详情 →</Text>
-              </View>
-            </View>
-
-            <View style={styles.bannerRight}>
+            {/* 左侧：3D玻璃钟罩展示台 (Cloche Bell Jar) */}
+            <View style={styles.showcaseLeft}>
               <Image
-                source={require('../../../assets/cards/album/banner_showcase.png')}
-                style={styles.bannerImage}
+                source={require('../../../assets/cloche_jar.png')}
+                style={styles.clocheJarImage}
                 contentFit="contain"
               />
             </View>
+
+            {/* 右侧：本期精选 / 夜间漫步 / 标签 / 诗意寄语 / 查看详情 */}
+            <View style={styles.showcaseRight}>
+              <Text style={styles.showcaseTopTag}>本期精选</Text>
+              <Text style={styles.showcaseCardTitle}>夜间漫步</Text>
+
+              <View style={styles.showcasePillRow}>
+                <View style={styles.pillGold}>
+                  <Text style={styles.pillGoldText}>限定</Text>
+                </View>
+                <View style={styles.pillDark}>
+                  <Text style={styles.pillDarkText}>SSR</Text>
+                </View>
+              </View>
+
+              <Text style={styles.showcaseQuoteText}>
+                在星光下，{'\n'}把所有的烦恼{'\n'}都变成星星。
+              </Text>
+
+              <View style={styles.showcaseActionBtn}>
+                <Text style={styles.showcaseActionBtnText}>查看详情 →</Text>
+              </View>
+            </View>
           </TouchableOpacity>
 
-          {/* Filter Pills */}
+          {/* Filter Pills (图4 4个圆角胶囊药丸：全部 / 已收集 / 未收集 / 稀有) */}
           <View style={styles.filterRow}>
             <TouchableOpacity
               style={[styles.filterPill, filter === 'ALL' && styles.filterPillActive]}
@@ -319,7 +258,7 @@ export default function AlbumScreen() {
                   filter === 'COLLECTED' && styles.filterPillTextActive,
                 ]}
               >
-                已收集 36
+                已收集
               </Text>
             </TouchableOpacity>
 
@@ -340,7 +279,7 @@ export default function AlbumScreen() {
                   filter === 'UNCOLLECTED' && styles.filterPillTextActive,
                 ]}
               >
-                未收集 12
+                未收集
               </Text>
             </TouchableOpacity>
 
@@ -358,30 +297,34 @@ export default function AlbumScreen() {
                   filter === 'RARE' && styles.filterPillTextActive,
                 ]}
               >
-                稀有 5
+                稀有
               </Text>
             </TouchableOpacity>
           </View>
 
-          {/* 4-Column Card Grid */}
+          {/* 3-Column Card Grid (图4 大卡片 + 彩虹全息边框 + 底部居中编号与标题) */}
           <View style={styles.gridContainer}>
             {filteredCards.map((card, idx) => {
               if (!card) return null;
               const isCollected = collectedCardIdSet.has(card.id);
-              const rarity = card.rarityTag || 'SR';
 
               return (
                 <TouchableOpacity
                   key={card.id || `card-${idx}`}
                   style={[
-                    styles.cardWrapper,
-                    { width: cardWidth, height: cardHeight },
+                    styles.cardColumnItem,
+                    { width: cardWidth },
                   ]}
                   onPress={() => handleCardPress(card)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.82}
                 >
-                  {/* Holographic metallic double border */}
-                  <View style={styles.cardBorderFrame} pointerEvents="none">
+                  {/* Holographic Prismatic Frame */}
+                  <View
+                    style={[
+                      styles.cardBorderFrame,
+                      { width: cardWidth, height: cardHeight },
+                    ]}
+                  >
                     {/* Thumbnail Artwork with safe fallback */}
                     <Image
                       source={card.previewImage || require('../../../assets/cards/album/card_01.png')}
@@ -389,33 +332,18 @@ export default function AlbumScreen() {
                       contentFit="cover"
                     />
 
-                    {/* Top Meta: Card Code + Rarity Badge */}
-                    <View style={styles.cardHeaderRow} pointerEvents="none">
-                      <View style={styles.cardCodeBadge}>
-                        <Text style={styles.cardCodeText}>
-                          {card.cardCode || `#0${idx + 1}`}
-                        </Text>
-                      </View>
+                    {/* 彩虹流光外框光影遮罩 */}
+                    <div className="holo-rainbow-sheen" />
+                  </View>
 
-                      <View
-                        style={[
-                          styles.rarityBadge,
-                          rarity === 'UR' && styles.rarityUR,
-                          rarity === 'SSR' && styles.raritySSR,
-                          rarity === 'SR' && styles.raritySR,
-                          rarity === 'R' && styles.rarityR,
-                        ]}
-                      >
-                        <Text style={styles.rarityText}>{rarity}</Text>
-                      </View>
-                    </View>
-
-                    {/* Bottom Title Bar with dark fade */}
-                    <View style={styles.cardTitleBar} pointerEvents="none">
-                      <Text style={styles.cardTitleText} numberOfLines={1}>
-                        {card.title || '神秘奇遇'}
-                      </Text>
-                    </View>
+                  {/* 图4 底部信息排版：上方微缩卡号 #027，下方卡名 */}
+                  <View style={styles.cardBottomMeta}>
+                    <Text style={styles.cardCodeBottomText}>
+                      {card.cardCode || `#0${idx + 1}`}
+                    </Text>
+                    <Text style={styles.cardTitleBottomText} numberOfLines={1}>
+                      {card.title || '神秘奇遇'}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -427,8 +355,13 @@ export default function AlbumScreen() {
       {/* Web enhancement styles */}
       {Platform.OS === 'web' && (
         <style>{`
-          .album-glow-card {
-            box-shadow: 0 8px 32px rgba(14, 165, 233, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          .holo-rainbow-sheen {
+            position: absolute;
+            inset: 0;
+            border-radius: 13px;
+            pointer-events: none;
+            box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.42),
+                        0 0 12px rgba(103, 232, 249, 0.28);
           }
         `}</style>
       )}
@@ -439,7 +372,7 @@ export default function AlbumScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#070913',
+    backgroundColor: '#060C17',
   },
   scroll: {
     flex: 1,
@@ -452,274 +385,221 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  /* Header */
+  /* Header (图4 纯粹现代深空排版) */
   headerBar: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 8,
-    marginTop: 4,
+    marginBottom: 16,
+    marginTop: 6,
+    paddingHorizontal: 4,
   },
-  brandPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    gap: 4,
+  headerTitleGroup: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
-  brandText: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  albumMainTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FAF7F2',
     letterSpacing: 0.8,
   },
-  brandSparkle: {
-    fontSize: 12,
-    color: '#FDE047',
-  },
-  topTabsGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 20,
-  },
-  topTabItem: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  topTabText: {
-    fontSize: 14.5,
+  albumSubtitle: {
+    fontSize: 13,
     fontWeight: '500',
     color: '#94A3B8',
-    letterSpacing: 0.5,
-  },
-  topTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-  },
-  topTabIndicator: {
-    width: 16,
-    height: 2.5,
-    backgroundColor: '#38BDF8',
-    borderRadius: 2,
     marginTop: 4,
+    letterSpacing: 0.3,
   },
-  headerRightCat: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+  headerRightSparkle: {
+    paddingTop: 6,
   },
-  catSparkleWrapper: {
-    position: 'absolute',
-    top: -2,
-    right: -4,
-  },
-
-  /* Slogan */
-  sloganRow: {
-    alignItems: 'center',
-    marginTop: 6,
-    marginBottom: 14,
-  },
-  sloganText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FDE047',
-    letterSpacing: 1.5,
+  bigSparkleIcon: {
+    fontSize: 24,
+    color: '#FAF7F2',
+    textShadowColor: 'rgba(255, 255, 255, 0.75)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
 
-  /* Showcase Banner */
+  /* Showcase Banner (图4 3D 玻璃钟罩展台) */
   showcaseBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(22, 28, 52, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(147, 197, 253, 0.22)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 16,
+    backgroundColor: 'rgba(10, 19, 36, 0.82)',
+    borderWidth: 1.2,
+    borderColor: 'rgba(56, 189, 248, 0.22)',
+    borderRadius: 22,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 18,
     overflow: 'hidden',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 8,
   },
-  bannerLeft: {
+  showcaseLeft: {
+    width: 145,
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clocheJarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  showcaseRight: {
     flex: 1,
-    paddingRight: 8,
+    paddingLeft: 10,
+    paddingRight: 6,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
-  bannerTagRow: {
-    flexDirection: 'row',
+  showcaseTopTag: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#CBD5E1',
+    letterSpacing: 0.5,
+  },
+  showcaseCardTitle: {
+    fontSize: 21,
+    fontWeight: '800',
+    color: '#FAF7F2',
+    letterSpacing: 0.6,
+    marginTop: 4,
     marginBottom: 6,
   },
-  bannerTagPill: {
-    backgroundColor: 'rgba(245, 158, 11, 0.16)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.42)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2.5,
+  showcasePillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
-  bannerTagText: {
-    fontSize: 10,
+  pillGold: {
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  pillGoldText: {
+    fontSize: 9.5,
     fontWeight: '700',
     color: '#FCD34D',
     letterSpacing: 0.3,
   },
-  bannerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginBottom: 12,
-    letterSpacing: 0.2,
-  },
-  bannerDetailBtn: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(56, 189, 248, 0.14)',
+  pillDark: {
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.45)',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+    borderColor: '#64748B',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
   },
-  bannerDetailBtnText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#38BDF8',
+  pillDarkText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#E2E8F0',
     letterSpacing: 0.3,
   },
-  bannerRight: {
-    width: 108,
-    height: 112,
-    alignItems: 'center',
-    justifyContent: 'center',
+  showcaseQuoteText: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    lineHeight: 17,
+    letterSpacing: 0.2,
+    marginBottom: 10,
   },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
+  showcaseActionBtn: {
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
+    borderWidth: 1.2,
+    borderColor: '#38BDF8',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 5.5,
+  },
+  showcaseActionBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#38BDF8',
+    letterSpacing: 0.5,
   },
 
-  /* Filter Row */
+  /* Filter Row (图4 药丸按钮) */
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   filterPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    flex: 1,
+    paddingVertical: 7.5,
+    borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterPillActive: {
-    backgroundColor: '#0284C7',
-    borderColor: '#38BDF8',
+    backgroundColor: '#F1ECE1',
+    borderColor: '#F1ECE1',
   },
   filterPillText: {
-    fontSize: 11.5,
+    fontSize: 12.5,
     fontWeight: '600',
     color: '#94A3B8',
   },
   filterPillTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: '#18181B',
+    fontWeight: '800',
   },
 
-  /* 4-Column Grid */
+  /* 3-Column Grid */
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: GAP,
     justifyContent: 'flex-start',
   },
-  cardWrapper: {
-    marginBottom: 4,
-    borderRadius: 10,
-    overflow: 'hidden',
+  cardColumnItem: {
+    marginBottom: 16,
+    alignItems: 'center',
   },
   cardBorderFrame: {
-    flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(224, 231, 255, 0.36)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     overflow: 'hidden',
-    backgroundColor: '#12172A',
+    backgroundColor: '#0F172A',
+    position: 'relative',
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  cardHeaderRow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  cardBottomMeta: {
     alignItems: 'center',
-    paddingHorizontal: 4,
-    paddingTop: 4,
-    zIndex: 2,
+    marginTop: 6,
+    width: '100%',
   },
-  cardCodeBadge: {
-    backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    borderRadius: 4,
-    paddingHorizontal: 3.5,
-    paddingVertical: 1.5,
-  },
-  cardCodeText: {
-    fontSize: 7.5,
+  cardCodeBottomText: {
+    fontSize: 10.5,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  cardTitleBottomText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FAF7F2',
+    marginTop: 2,
     letterSpacing: 0.3,
-  },
-  rarityBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 1.5,
-  },
-  rarityUR: {
-    backgroundColor: '#F43F5E',
-  },
-  raritySSR: {
-    backgroundColor: '#F59E0B',
-  },
-  raritySR: {
-    backgroundColor: '#8B5CF6',
-  },
-  rarityR: {
-    backgroundColor: '#0284C7',
-  },
-  rarityText: {
-    fontSize: 7.5,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  cardTitleBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
-    paddingVertical: 3,
-    paddingHorizontal: 3,
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  cardTitleText: {
-    fontSize: 9.5,
-    fontWeight: '600',
-    color: '#F8FAFC',
     textAlign: 'center',
-    letterSpacing: 0.2,
   },
 });

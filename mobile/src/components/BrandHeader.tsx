@@ -40,7 +40,7 @@ export const BrandHeader: React.FC<BrandHeaderProps> = ({
           <Path
             d="M18 8 A6 6 0 0 0 6 8 C6 15 3 17 3 17 H21 S18 15 18 8"
             fill="none"
-            stroke={colors.ink}
+            stroke="#FAF7F2"
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -48,7 +48,7 @@ export const BrandHeader: React.FC<BrandHeaderProps> = ({
           <Path
             d="M13.73 21 A2 2 0 0 1 10.27 21"
             fill="none"
-            stroke={colors.ink}
+            stroke="#FAF7F2"
             strokeWidth="1.8"
             strokeLinecap="round"
           />
@@ -67,59 +67,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 10,
     backgroundColor: 'transparent',
+    zIndex: 20,
   },
   dateContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(15, 23, 42, 0.68)',
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(232, 226, 217, 0.8)',
+    borderColor: 'rgba(255, 255, 255, 0.16)',
   },
   dateText: {
     fontSize: 12,
-    fontFamily: 'System',
     fontWeight: '600',
-    color: colors.inkMuted,
+    color: '#E2E8F0',
     letterSpacing: 0.3,
   },
   brandPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E6DFC8',
-    shadowColor: '#2D2823',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   brandDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.moss,
+    backgroundColor: '#67E8F9',
     marginRight: 6,
+    shadowColor: '#67E8F9',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   brandTitle: {
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 1.2,
-    color: colors.ink,
+    color: '#FAF7F2',
   },
   bellButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(15, 23, 42, 0.68)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(232, 226, 217, 0.8)',
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     position: 'relative',
   },
   unreadDot: {
@@ -129,8 +133,8 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#E06D53',
+    backgroundColor: '#EF4444',
     borderWidth: 1.2,
-    borderColor: '#FFFFFF',
+    borderColor: '#0F172A',
   },
 });
